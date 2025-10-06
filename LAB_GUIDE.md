@@ -1,10 +1,10 @@
 # Cisco Network Plug and Play (PnP) Automation Lab
-## Student Lab Guide
+## Student Lab Guide - Catalyst Center 3.1.x
 
 **Course**: Advanced Network Automation  
 **Lab Duration**: 3-4 hours  
 **Difficulty Level**: Intermediate to Advanced  
-**Prerequisites**: Basic Python, Cisco networking fundamentals, CLI experience
+**Prerequisites**: Basic Python, Cisco networking fundamentals, CLI experience, Catalyst Center 3.1.x familiarity
 
 ---
 
@@ -14,10 +14,11 @@ By the end of this lab, you will be able to:
 
 1. Configure and deploy Cisco Network Plug and Play (PnP) automation
 2. Set up DHCP Option 43 for automatic device discovery
-3. Create and customize Jinja2 configuration templates
-4. Use Python scripts to interact with Cisco Catalyst Center APIs
-5. Provision multiple network devices using zero-touch deployment
-6. Troubleshoot common PnP deployment issues
+3. Create and customize Jinja2 configuration templates with 3.1.x enhancements
+4. Use Python scripts to interact with Cisco Catalyst Center 3.1.x APIs
+5. Leverage enhanced task management and site hierarchy features
+6. Provision multiple network devices using zero-touch deployment
+7. Troubleshoot common PnP deployment issues with 3.1.x diagnostic tools
 
 ---
 
@@ -239,24 +240,24 @@ This project must be deployed from an Ubuntu administrator device. Follow these 
    
    # Check network connectivity
    echo "Network Connectivity:"
-   ping -c 3 8.8.8.8 > /dev/null && echo "✓ Internet connectivity OK" || echo "✗ No internet connectivity"
+   ping -c 3 8.8.8.8 > /dev/null && echo "[OK] Internet connectivity verified" || echo "[FAIL] No internet connectivity"
    echo ""
    
    # Check essential commands
    echo "Essential Tools:"
-   command -v curl >/dev/null 2>&1 && echo "✓ curl installed" || echo "✗ curl missing"
-   command -v wget >/dev/null 2>&1 && echo "✓ wget installed" || echo "✗ wget missing"
-   command -v ssh >/dev/null 2>&1 && echo "✓ ssh client installed" || echo "✗ ssh client missing"
-   command -v git >/dev/null 2>&1 && echo "✓ git installed" || echo "✗ git missing"
+   command -v curl >/dev/null 2>&1 && echo "[OK] curl installed" || echo "[MISSING] curl not found"
+   command -v wget >/dev/null 2>&1 && echo "[OK] wget installed" || echo "[MISSING] wget not found"
+   command -v ssh >/dev/null 2>&1 && echo "[OK] ssh client installed" || echo "[MISSING] ssh client not found"
+   command -v git >/dev/null 2>&1 && echo "[OK] git installed" || echo "[MISSING] git not found"
    echo ""
    
    # Check Python packages (if virtual env is active)
    if [[ "$VIRTUAL_ENV" != "" ]]; then
        echo "Virtual Environment Active: $VIRTUAL_ENV"
        echo "Python Packages:"
-       python -c "import requests, yaml, jinja2; print('✓ Core packages installed')" 2>/dev/null || echo "✗ Core packages missing"
+       python -c "import requests, yaml, jinja2; print('[OK] Core packages installed')" 2>/dev/null || echo "[FAIL] Core packages missing"
    else
-       echo "⚠ Virtual environment not activated"
+       echo "[WARNING] Virtual environment not activated"
    fi
    echo ""
    
@@ -363,15 +364,15 @@ This project must be deployed from an Ubuntu administrator device. Follow these 
    try:
        import requests, yaml, jinja2, urllib3, json, os, time, logging
        from datetime import datetime
-       print('✓ All core packages imported successfully')
+       print('[OK] All core packages imported successfully')
    except ImportError as e:
-       print(f'✗ Import error: {e}')
+       print(f'[FAIL] Import error: {e}')
    "
    
    # Test project scripts syntax
    python3 -m py_compile scripts/pnp_automation.py
    python3 -m py_compile scripts/config_generator.py
-   echo "✓ Scripts compiled successfully"
+   echo "[OK] Scripts compiled successfully"
    ```
 
 5. **Set Up Project Permissions**
@@ -768,15 +769,15 @@ Choose your DHCP server type and follow the appropriate section:
        client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
        success = client.authenticate()
        if success:
-           print('✓ Authentication successful')
+           print('[OK] Authentication successful')
            
            # Test getting PnP devices
            devices = client.get_pnp_devices()
-           print(f'✓ Found {len(devices)} PnP devices in inventory')
+           print(f'[OK] Found {len(devices)} PnP devices in inventory')
        else:
-           print('✗ Authentication failed')
+           print('[FAIL] Authentication failed')
    except Exception as e:
-       print(f'✗ Connection error: {e}')
+       print(f'[ERROR] Connection error: {e}')
    "
    ```
 
@@ -925,12 +926,12 @@ Choose your DHCP server type and follow the appropriate section:
    
    | Device | Management IP | Hostname | OSPF Process | Status |
    |--------|---------------|----------|--------------|---------|
-   | Branch Router | | | | ☐ |
-   | Gateway Router | | | | ☐ |
-   | Wireless Controller | | | | ☐ |
-   | Access Point 1 | | | | ☐ |
-   | Access Point 2 | | | | ☐ |
-   | Access Point 3 | | | | ☐ |
+   | Branch Router | | | | [ ] |
+   | Gateway Router | | | | [ ] |
+   | Wireless Controller | | | | [ ] |
+   | Access Point 1 | | | | [ ] |
+   | Access Point 2 | | | | [ ] |
+   | Access Point 3 | | | | [ ] |
 
 ---
 

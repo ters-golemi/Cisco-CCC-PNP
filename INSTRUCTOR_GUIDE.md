@@ -1,4 +1,5 @@
 # Cisco PnP Automation Lab - Instructor Guide
+## Catalyst Center 3.1.x Compatible
 
 ## Lab Overview
 **Duration**: 3-4 hours  
@@ -67,7 +68,7 @@ pip install --upgrade pip
 pip install requests PyYAML Jinja2 urllib3 certifi colorlog python-dotenv
 pip install netmiko napalm paramiko jsonschema ruamel.yaml pytest
 
-echo "✓ Ubuntu setup completed for user: $USER"
+echo "[OK] Ubuntu setup completed for user: $USER"
 echo "Next steps:"
 echo "1. Activate virtual environment: source ~/network-automation/cisco-pnp-env/bin/activate"
 echo "2. Clone project: git clone https://github.com/ters-golemi/Cisco-CCC-PNP.git"
@@ -127,12 +128,12 @@ access-point-03: FCH2147A1B7
 
 | Device | Management IP | Hostname | OSPF Process | Status |
 |--------|---------------|----------|--------------|---------|
-| Branch Router | 10.10.10.10 | branch-router-01 | 1 | ✓ |
-| Gateway Router | 10.10.10.11 | gateway-router-01 | 1 | ✓ |
-| Wireless Controller | 10.10.10.12 | wireless-controller-01 | N/A | ✓ |
-| Access Point 1 | 10.10.70.21 | access-point-01 | N/A | ✓ |
-| Access Point 2 | 10.10.70.22 | access-point-02 | N/A | ✓ |
-| Access Point 3 | 10.10.70.23 | access-point-03 | N/A | ✓ |
+| Branch Router | 10.10.10.10 | branch-router-01 | 1 | [OK] |
+| Gateway Router | 10.10.10.11 | gateway-router-01 | 1 | [OK] |
+| Wireless Controller | 10.10.10.12 | wireless-controller-01 | N/A | [OK] |
+| Access Point 1 | 10.10.70.21 | access-point-01 | N/A | [OK] |
+| Access Point 2 | 10.10.70.22 | access-point-02 | N/A | [OK] |
+| Access Point 3 | 10.10.70.23 | access-point-03 | N/A | [OK] |
 
 ## Common Student Issues and Solutions
 

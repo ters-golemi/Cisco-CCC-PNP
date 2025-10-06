@@ -1,4 +1,5 @@
 # Requirements for Cisco PnP Automation Project
+# Compatible with Cisco Catalyst Center 3.1.x
 
 # Core dependencies
 requests>=2.31.0

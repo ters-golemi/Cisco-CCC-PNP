@@ -12,7 +12,7 @@
 
 ## Overview
 
-This project provides comprehensive automation for Cisco Network Plug and Play (PnP) deployments using Cisco Catalyst Center (formerly DNA Center). The solution includes:
+This project provides comprehensive automation for Cisco Network Plug and Play (PnP) deployments using Cisco Catalyst Center 3.1.x (formerly DNA Center). The solution includes:
 
 - Automated device provisioning using PnP with DHCP Option 43
 - Configuration templates for routers, switches, wireless controllers, and access points
@@ -28,10 +28,11 @@ This project provides comprehensive automation for Cisco Network Plug and Play (
 ## Prerequisites
 
 ### Infrastructure Requirements
-- **Cisco Catalyst Center** (version 2.3.5+ recommended)
+- **Cisco Catalyst Center** (version 3.1.x required, 3.1.0+ recommended)
 - **DHCP Server** with Option 43 support
 - **Network connectivity** between devices and Catalyst Center
 - **DNS resolution** for device discovery
+- **Enhanced API support** for 3.1.x features (improved task management, site hierarchy)
 
 ### Software Requirements
 - Python 3.8 or higher

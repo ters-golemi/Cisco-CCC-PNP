@@ -244,7 +244,7 @@ verify_installation() {
     python -c "
 import requests, yaml, jinja2, urllib3, json, os, time, logging
 from datetime import datetime
-print('✓ All core packages imported successfully')
+print('[OK] All core packages imported successfully')
 " || {
         error "Python package import failed"
         return 1
@@ -253,11 +253,11 @@ print('✓ All core packages imported successfully')
     # Check project scripts
     python -m py_compile scripts/pnp_automation.py
     python -m py_compile scripts/config_generator.py
-    echo "✓ Project scripts compiled successfully"
+    echo "[OK] Project scripts compiled successfully"
     
     # Check network connectivity
     if ping -c 3 8.8.8.8 >/dev/null 2>&1; then
-        echo "✓ Internet connectivity verified"
+        echo "[OK] Internet connectivity verified"
     else
         warning "No internet connectivity detected"
     fi
@@ -265,7 +265,7 @@ print('✓ All core packages imported successfully')
     # Check essential commands
     for cmd in git curl ssh; do
         if command -v $cmd >/dev/null 2>&1; then
-            echo "✓ $cmd command available"
+            echo "[OK] $cmd command available"
         else
             error "$cmd command not found"
         fi
