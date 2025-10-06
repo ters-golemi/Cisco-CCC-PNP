@@ -1,0 +1,183 @@
+{# Cisco CSR1000v Gateway Router Configuration Template #}
+{# Campus Core Gateway Configuration #}
+{# Device: {{ device.name }} #}
+
+! Cisco CSR1000v Gateway Router Configuration
+! Generated: {{ timestamp }}
+! Device: {{ device.name }}
+! Role: {{ device.role }}
+
+version 16.12
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+service call-home
+!
+hostname {{ device.name }}
+!
+! VRF Configuration (if needed for segmentation)
+vrf definition Mgmt-vrf
+ !
+ address-family ipv4
+ exit-address-family
+!
+! Enable necessary services
+no ip http server
+ip http secure-server
+ip http authentication local
+!
+! Configure management users
+username admin privilege 15 secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+username dnac privilege 15 secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+!
+! Enable SSH
+ip domain-name {{ topology.catalyst_center.settings.domain }}
+crypto key generate rsa general-keys modulus 2048
+ip ssh version 2
+!
+
+! VLAN Configuration
+{% for vlan in device.vlans %}
+vlan {{ vlan.vlan_id }}
+ name {{ vlan.interface | replace('vlan', '') | upper }}_VLAN
+!
+{% endfor %}
+
+! Interface Configuration
+{% for interface in device.interfaces %}
+interface {{ interface.name }}
+ description {{ interface.description }}
+{% if interface.type == "routed" %}
+ ip address {{ interface.ip }}
+ no shutdown
+{% elif interface.type == "trunk" %}
+ switchport mode trunk
+ switchport trunk allowed vlan {{ interface.trunk_vlans | join(',') }}
+ no shutdown
+{% endif %}
+!
+{% endfor %}
+
+! VLAN Interfaces (SVIs)
+{% for vlan in device.vlans %}
+interface {{ vlan.interface }}
+ description {{ vlan.interface | upper }} Interface
+ ip address {{ vlan.ip }}
+ no shutdown
+ ip helper-address {{ topology.catalyst_center.ip_address }}
+!
+{% endfor %}
+
+! Configure loopback for management
+interface Loopback0
+ description Management Loopback
+ ip address {{ device.mgmt_ip }} 255.255.255.0
+!
+
+! Inter-VLAN Routing
+ip routing
+!
+
+! DHCP Relay Configuration
+{% for vlan in topology.vlans %}
+interface vlan{{ vlan.vlan_id }}
+ ip helper-address {{ topology.catalyst_center.ip_address }}
+ ip helper-address 10.10.10.80
+!
+{% endfor %}
+
+! OSPF Configuration for internal routing
+router ospf 1
+ router-id {{ device.mgmt_ip }}
+ network 10.10.0.0 0.0.255.255 area 0
+ passive-interface default
+ no passive-interface GigabitEthernet1
+!
+
+! Access Control Lists
+ip access-list extended GUEST_ACCESS
+ deny   ip 10.10.40.0 0.0.0.255 10.10.10.0 0.0.0.255
+ deny   ip 10.10.40.0 0.0.0.255 10.10.30.0 0.0.0.255
+ deny   ip 10.10.40.0 0.0.0.255 10.10.70.0 0.0.0.255
+ permit ip 10.10.40.0 0.0.0.255 any
+!
+interface vlan40
+ ip access-group GUEST_ACCESS in
+!
+
+! QoS Configuration
+class-map match-any MANAGEMENT
+ match dscp af31
+ match protocol telnet
+ match protocol ssh
+ match protocol snmp
+!
+class-map match-any VOICE
+ match dscp ef
+!
+policy-map WAN-POLICY
+ class VOICE
+  priority percent 30
+ class MANAGEMENT
+  bandwidth percent 20
+ class class-default
+  fair-queue
+!
+
+! SNMP Configuration
+snmp-server community public RO
+snmp-server community private RW
+snmp-server location "{{ device.location }}"
+snmp-server contact "Network Admin"
+snmp-server host {{ topology.catalyst_center.ip_address }} version 2c public
+!
+
+! NetFlow Configuration for monitoring
+ip flow-export destination {{ topology.catalyst_center.ip_address }} 9996
+ip flow-export version 9
+!
+{% for interface in device.interfaces %}
+{% if interface.type == "routed" %}
+interface {{ interface.name }}
+ ip flow ingress
+ ip flow egress
+!
+{% endif %}
+{% endfor %}
+
+! NTP Configuration
+ntp server 0.pool.ntp.org
+ntp server 1.pool.ntp.org
+clock timezone UTC 0 0
+!
+
+! Logging
+logging buffered 16384 informational
+logging console warnings
+logging host {{ topology.catalyst_center.ip_address }}
+!
+
+! Security settings
+no ip source-route
+no ip gratuitous-arps
+ip tcp synwait-time 10
+!
+
+! AAA Configuration
+aaa new-model
+aaa authentication login default local
+aaa authorization exec default local
+!
+
+! Line configuration
+line con 0
+ logging synchronous
+ exec-timeout 30 0
+line aux 0
+line vty 0 4
+ exec-timeout 30 0
+ transport input ssh
+!
+
+! End of configuration
+end

@@ -1,0 +1,261 @@
+{# Cisco Catalyst 9130AXE Access Point Configuration Template #}
+{# Wireless Access Point Day-Zero Configuration #}
+{# Device: {{ device.name }} #}
+
+! Cisco Catalyst 9130AXE Access Point Configuration
+! Generated: {{ timestamp }}
+! Device: {{ device.name }}
+! AP Profile: {{ device.ap_profile | default('default-ap-profile') }}
+
+version 17.06.01
+service timestamps debug datetime msec
+service timestamps log datetime msec
+service call-home
+!
+hostname {{ device.name }}
+!
+
+! Management Configuration
+username Cisco password 0 Cisco
+username admin privilege 15 secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+enable secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+!
+aaa new-model
+aaa authentication login default local
+aaa authorization exec default local
+!
+
+! Enable necessary services
+no ip http server
+ip http secure-server
+!
+ip domain-name {{ topology.catalyst_center.settings.domain }}
+crypto key generate rsa general-keys modulus 1024
+ip ssh version 2
+!
+
+! Timezone and NTP
+clock timezone UTC 0 0
+ntp server {{ topology.ntp.primary | default('0.pool.ntp.org') }}
+ntp server {{ topology.ntp.secondary | default('1.pool.ntp.org') }}
+!
+
+! Interface Configuration - Ethernet (Uplink to Switch)
+interface GigabitEthernet0
+ description "Uplink to Access Switch - PoE+"
+ no ip address
+ duplex auto
+ speed auto
+ no shutdown
+!
+
+! Dot11 Radio Configuration
+! Radio 0 - 2.4GHz
+dot11 ssid CORPORATE_WLAN
+   vlan {{ topology.vlans | selectattr('name', 'equalto', 'corporate') | map(attribute='vlan_id') | first }}
+   authentication open 
+   authentication key-management wpa version 2
+   wpa-psk ascii 0 CorporateWiFi123!
+!
+dot11 ssid GUEST_WLAN
+   vlan {{ topology.vlans | selectattr('name', 'equalto', 'guest') | map(attribute='vlan_id') | first }}
+   authentication open
+   authentication key-management wpa version 2  
+   wpa-psk ascii 0 GuestWiFi123!
+   guest-mode
+!
+
+! Radio 0 Configuration (2.4GHz)
+interface Dot11Radio0
+ no ip address
+ encryption vlan {{ topology.vlans | selectattr('name', 'equalto', 'corporate') | map(attribute='vlan_id') | first }} mode ciphers aes-ccm
+ encryption vlan {{ topology.vlans | selectattr('name', 'equalto', 'guest') | map(attribute='vlan_id') | first }} mode ciphers aes-ccm
+ ssid CORPORATE_WLAN
+ ssid GUEST_WLAN
+ channel {{ device.radio_config.radio0.channel | default('least-congested') }}
+ power local maximum {{ device.radio_config.radio0.power | default('30') }}
+ no shutdown
+!
+interface Dot11Radio0.{{ topology.vlans | selectattr('name', 'equalto', 'corporate') | map(attribute='vlan_id') | first }}
+ encapsulation dot1Q {{ topology.vlans | selectattr('name', 'equalto', 'corporate') | map(attribute='vlan_id') | first }}
+ no ip address
+ bridge-group 1
+ bridge-group 1 subscriber-loop-control
+ bridge-group 1 block-unknown-source
+ no bridge-group 1 source-learning
+ no bridge-group 1 unicast-flooding
+!
+interface Dot11Radio0.{{ topology.vlans | selectattr('name', 'equalto', 'guest') | map(attribute='vlan_id') | first }}
+ encapsulation dot1Q {{ topology.vlans | selectattr('name', 'equalto', 'guest') | map(attribute='vlan_id') | first }}
+ no ip address
+ bridge-group 2
+ bridge-group 2 subscriber-loop-control
+ bridge-group 2 block-unknown-source
+ no bridge-group 2 source-learning
+ no bridge-group 2 unicast-flooding
+!
+
+! Radio 1 Configuration (5GHz)
+interface Dot11Radio1
+ no ip address
+ encryption vlan {{ topology.vlans | selectattr('name', 'equalto', 'corporate') | map(attribute='vlan_id') | first }} mode ciphers aes-ccm
+ encryption vlan {{ topology.vlans | selectattr('name', 'equalto', 'guest') | map(attribute='vlan_id') | first }} mode ciphers aes-ccm
+ ssid CORPORATE_WLAN
+ ssid GUEST_WLAN
+ channel {{ device.radio_config.radio1.channel | default('least-congested') }}
+ power local maximum {{ device.radio_config.radio1.power | default('30') }}
+ no shutdown
+!
+interface Dot11Radio1.{{ topology.vlans | selectattr('name', 'equalto', 'corporate') | map(attribute='vlan_id') | first }}
+ encapsulation dot1Q {{ topology.vlans | selectattr('name', 'equalto', 'corporate') | map(attribute='vlan_id') | first }}
+ no ip address
+ bridge-group 1
+ bridge-group 1 subscriber-loop-control
+ bridge-group 1 block-unknown-source
+ no bridge-group 1 source-learning
+ no bridge-group 1 unicast-flooding
+!
+interface Dot11Radio1.{{ topology.vlans | selectattr('name', 'equalto', 'guest') | map(attribute='vlan_id') | first }}
+ encapsulation dot1Q {{ topology.vlans | selectattr('name', 'equalto', 'guest') | map(attribute='vlan_id') | first }}
+ no ip address
+ bridge-group 2
+ bridge-group 2 subscriber-loop-control
+ no bridge-group 2 source-learning
+ no bridge-group 2 unicast-flooding
+!
+
+! BVI Interfaces (Bridge Virtual Interfaces)
+interface BVI1
+ description "Corporate VLAN Bridge"
+ ip address dhcp client-id GigabitEthernet0
+ no shutdown
+!
+interface BVI2  
+ description "Guest VLAN Bridge"
+ ip address dhcp client-id GigabitEthernet0
+ no shutdown
+!
+
+! Bridge Group Configuration
+bridge irb
+bridge 1 protocol ieee
+bridge 1 route ip
+bridge 2 protocol ieee
+bridge 2 route ip
+!
+
+! Ethernet Bridge Configuration
+interface GigabitEthernet0.{{ topology.vlans | selectattr('name', 'equalto', 'corporate') | map(attribute='vlan_id') | first }}
+ encapsulation dot1Q {{ topology.vlans | selectattr('name', 'equalto', 'corporate') | map(attribute='vlan_id') | first }}
+ no ip address
+ bridge-group 1
+!
+interface GigabitEthernet0.{{ topology.vlans | selectattr('name', 'equalto', 'guest') | map(attribute='vlan_id') | first }}
+ encapsulation dot1Q {{ topology.vlans | selectattr('name', 'equalto', 'guest') | map(attribute='vlan_id') | first }}
+ no ip address
+ bridge-group 2
+!
+
+! CAPWAP Configuration for WLC Discovery
+capwap ap ip address {{ device.capwap_ip | default('dhcp') }}
+capwap ap controller ip address {{ topology.wlc.primary_ip }}
+{% if topology.wlc.secondary_ip is defined %}
+capwap ap controller ip address {{ topology.wlc.secondary_ip }} backup
+{% endif %}
+capwap ap discovery timer 10
+!
+
+! DHCP Configuration for IP Assignment
+ip dhcp pool AP_POOL
+ import all
+ network {{ topology.vlans | selectattr('name', 'equalto', 'ap_mgmt') | map(attribute='network') | first }}
+ default-router {{ topology.vlans | selectattr('name', 'equalto', 'ap_mgmt') | map(attribute='gateway') | first }}
+ dns-server {{ topology.dns.primary }} {{ topology.dns.secondary }}
+ option 43 hex {{ topology.catalyst_center.settings.dhcp_option_43 }}
+!
+
+! Quality of Service (QoS)
+access-list 124 permit tcp any any eq www
+access-list 124 permit tcp any any eq 443
+access-list 124 permit tcp any any eq ftp
+access-list 124 permit tcp any any eq 22
+access-list 124 permit icmp any any
+!
+
+! Security Configuration
+! Prevent SSID from being broadcasted if needed
+! dot11 ssid CORPORATE_WLAN
+!  no broadcast-ssid
+
+! Rogue AP Detection
+dot11 rogue detection
+dot11 rogue containment level 1
+!
+
+! Radio Management and Optimization
+dot11 extension aironet
+dot11 network-map
+!
+
+! Location Services
+dot11 location method rss enable
+dot11 location rfid enable
+!
+
+! Load Balancing
+dot11 load-balance
+!
+
+! Backup WLC Configuration (if applicable)
+wlccp ap username {{ topology.wlc.credentials.username }} password {{ topology.wlc.credentials.password }}
+wlccp ap backup-controller ip {{ topology.wlc.backup_ip | default(topology.wlc.primary_ip) }}
+!
+
+! SNMP Configuration
+snmp-server community public RO
+snmp-server location "{{ device.location }}"
+snmp-server contact "Network Admin"
+snmp-server host {{ topology.wlc.primary_ip }} version 2c public
+!
+
+! Logging Configuration
+logging buffered 16384 informational
+logging console warnings
+logging host {{ topology.wlc.primary_ip }}
+!
+
+! Archive Configuration
+archive
+ log config
+  logging enable
+ path flash:config-
+ write-memory
+!
+
+! Line Configuration
+line con 0
+ logging synchronous
+ exec-timeout 30 0
+line vty 0 4
+ exec-timeout 30 0
+ transport input ssh
+!
+
+! Event Manager for Health Monitoring
+event manager applet AP_HEALTH
+ event timer watchdog time 300
+ action 1.0 syslog msg "AP Health Check: Memory and CPU utilization within normal range"
+ action 2.0 cli command "show process cpu | include five"
+ action 3.0 cli command "show memory statistics | include Processor"
+!
+
+! Enable CDP for Network Discovery
+cdp run
+!
+
+! Power Management
+power inline consumption {{ device.power.consumption | default('30000') }}
+!
+
+! End of Access Point Configuration
+end

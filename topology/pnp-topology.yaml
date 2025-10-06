@@ -1,0 +1,341 @@
+# Cisco Network Plug and Play (PnP) Topology Definition
+# Based on Campus Network with Catalyst Center Integration
+#
+# Network Diagram:
+#                    ┌─────────────────┐
+#                    │   VM Cloud      │
+#                    │    ESXi-1       │
+#                    │  PnP Agent      │
+#                    └─────────┬───────┘
+#                              │
+#                    ┌─────────▼───────┐
+#                    │   8000v Branch  │
+#                    │ 10.10.100.10/24│ ── 10.10.11.0/24
+#                    │  (PnP DHCP)     │
+#                    └─────────┬───────┘
+#                              │ WAN
+#           ┌──────────────────┼──────────────────┐
+#           │                  │                  │
+#    ┌──────▼──────┐    ┌─────▼─────┐    ┌──────▼──────┐
+#    │ DNS Server  │    │8000v WAN  │    │    WLC      │
+#    │10.10.10.80/24│   │Router     │    │10.10.10.30/24│
+#    └─────────────┘    │10.10.10.1/24│  └─────────────┘
+#                       └─────┬─────┘
+#                             │ Campus Network
+#          ┌──────────────────┼──────────────────────────┐
+#          │                  │                          │
+#    ┌─────▼─────┐     ┌─────▼─────┐              ┌─────▼─────┐
+#    │   DHCP    │     │    CSR    │              │  Student  │
+#    │  Server   │     │ Gateway   │              │    PC     │
+#    └───────────┘     │  Router   │              │10.10.10.10│
+#                      └─────┬─────┘              └───────────┘
+#                            │
+#        ┌───────────────────┼───────────────────┐
+#        │                   │                   │
+#  ┌─────▼─────┐       ┌─────▼─────┐       ┌─────▼─────┐
+#  │   AP1     │       │   AP2     │       │ Catalyst  │
+#  │  WSIM     │       │  WSIM     │       │ Center    │
+#  │10.10.10.x │       │10.10.10.x │       │10.10.70.50│
+#  └───────────┘       └───────────┘       └─────┬─────┘
+#        │                   │                   │
+#  ┌─────▼─────┐       ┌─────▼─────┐             │
+#  │Wireless   │       │Wireless   │             │
+#  │   PC1     │       │   PC2     │             │
+#  └───────────┘       └───────────┘             │
+#                                                │
+#                      ┌─────────────────────────▼─────────────┐
+#                      │          vSwitch                      │
+#                      │    Virtual Port Groups & VLAN        │
+#                      │  VLAN 10 - Campus Mgmt.              │
+#                      │  VLAN 0 - DNAC Mgmt.                 │
+#                      │  VLAN 30 - Employee                   │
+#                      │  VLAN 40 - Guest                     │
+#                      │  VLAN 11 - Wireless Mgmt             │
+#                      │  OIA - Internet                       │
+#                      │  ALL - (Trunk)                       │
+#                      └───────────────────────────────────────┘
+
+---
+topology:
+  name: "cisco-pnp-campus-network"
+  description: "Cisco Campus Network with Plug and Play Provisioning"
+  
+  # Network Addressing Scheme
+  addressing:
+    management_network: "10.10.10.0/24"      # Main management network
+    campus_network: "10.10.100.0/24"         # Campus devices
+    branch_network: "10.10.11.0/24"          # Branch network
+    dnac_network: "10.10.70.0/24"            # DNAC management
+    employee_network: "10.10.30.0/24"        # Employee VLAN
+    guest_network: "10.10.40.0/24"           # Guest VLAN
+    wireless_mgmt: "10.10.11.0/24"           # Wireless management
+    
+  # VLAN Configuration
+  vlans:
+    - vlan_id: 10
+      name: "Campus_Mgmt"
+      description: "Campus Management VLAN"
+      subnet: "10.10.10.0/24"
+      gateway: "10.10.10.1"
+    - vlan_id: 0
+      name: "DNAC_Mgmt" 
+      description: "DNAC Management VLAN"
+      subnet: "10.10.70.0/24"
+      gateway: "10.10.70.1"
+    - vlan_id: 30
+      name: "Employee"
+      description: "Employee Access VLAN"
+      subnet: "10.10.30.0/24"
+      gateway: "10.10.30.1"
+    - vlan_id: 40
+      name: "Guest"
+      description: "Guest Access VLAN"
+      subnet: "10.10.40.0/24"
+      gateway: "10.10.40.1"
+    - vlan_id: 11
+      name: "Wireless_Mgmt"
+      description: "Wireless Management VLAN"
+      subnet: "10.10.11.0/24"
+      gateway: "10.10.11.1"
+      
+  # Device Definitions
+  devices:
+    # WAN Infrastructure
+    - name: "8000v-branch"
+      role: "branch_router"
+      model: "ISR4000"
+      platform: "ios-xe"
+      mgmt_ip: "10.10.100.10"
+      location: "VM Cloud ESXi-1"
+      interfaces:
+        - name: "GigabitEthernet0/0/0"
+          description: "To PnP Agent"
+          ip: "10.10.11.1/24"
+          type: "routed"
+        - name: "GigabitEthernet0/0/1"
+          description: "To WAN"
+          ip: "dhcp"
+          type: "routed"
+      services:
+        dhcp_server:
+          enabled: true
+          pools:
+            - name: "PnP_POOL"
+              network: "10.10.11.0/24"
+              start: "10.10.11.100"
+              end: "10.10.11.200"
+              gateway: "10.10.11.1"
+              dns: ["10.10.10.80", "8.8.8.8"]
+              option43: "5A1D;B2;K4;I172.16.1.10;J80"  # Points to Catalyst Center
+              
+    - name: "8000v-wan-router"
+      role: "wan_router"
+      model: "ISR4000"
+      platform: "ios-xe"
+      mgmt_ip: "10.10.10.1"
+      location: "Campus Core"
+      interfaces:
+        - name: "GigabitEthernet0/0/0"
+          description: "To Branch"
+          ip: "10.10.100.1/24"
+          type: "routed"
+        - name: "GigabitEthernet0/0/1"
+          description: "To Campus LAN"
+          ip: "10.10.10.1/24"
+          type: "routed"
+        - name: "GigabitEthernet0/0/2"
+          description: "To Internet"
+          ip: "dhcp"
+          type: "routed"
+      routing:
+        static_routes:
+          - destination: "0.0.0.0/0"
+            next_hop: "192.168.1.1"  # ISP gateway
+          - destination: "10.10.11.0/24"
+            next_hop: "10.10.100.10"
+    
+    # Campus Infrastructure
+    - name: "csr1kv-gateway"
+      role: "campus_gateway"
+      model: "CSR1000V"
+      platform: "ios-xe"
+      mgmt_ip: "10.10.70.1"
+      location: "Campus Data Center"
+      interfaces:
+        - name: "GigabitEthernet1"
+          description: "Campus Uplink"
+          ip: "10.10.10.254/24"
+          type: "routed"
+        - name: "GigabitEthernet2"
+          description: "To vSwitch"
+          trunk_vlans: [10, 30, 40, 11]
+          type: "trunk"
+      vlans:
+        - vlan_id: 10
+          interface: "vlan10"
+          ip: "10.10.10.1/24"
+        - vlan_id: 30
+          interface: "vlan30" 
+          ip: "10.10.30.1/24"
+        - vlan_id: 40
+          interface: "vlan40"
+          ip: "10.10.40.1/24"
+        - vlan_id: 11
+          interface: "vlan11"
+          ip: "10.10.11.1/24"
+          
+    # Network Services
+    - name: "dns-server"
+      role: "dns_server"
+      model: "Virtual"
+      platform: "linux"
+      mgmt_ip: "10.10.10.80"
+      services:
+        dns:
+          enabled: true
+          zones:
+            - name: "campus.local"
+              records:
+                - name: "dnac"
+                  ip: "10.10.70.50"
+                - name: "wlc"
+                  ip: "10.10.10.30"
+                - name: "gateway"
+                  ip: "10.10.10.1"
+                  
+    - name: "wlc-controller"
+      role: "wireless_controller"
+      model: "C9800-CL"
+      platform: "ios-xe"
+      mgmt_ip: "10.10.10.30"
+      interfaces:
+        - name: "GigabitEthernet0"
+          description: "Management Interface"
+          ip: "10.10.10.30/24"
+          type: "routed"
+      wireless:
+        ssids:
+          - name: "Corporate"
+            vlan: 30
+            security: "wpa2-enterprise"
+          - name: "Guest"
+            vlan: 40
+            security: "wpa2-psk"
+            psk: "GuestAccess123"
+            
+    # Access Points (Managed by PnP)
+    - name: "ap1-wsim"
+      role: "access_point"
+      model: "AIR-AP2802I"
+      platform: "ap"
+      mgmt_ip: "dhcp"
+      location: "Building A Floor 1"
+      pnp_enabled: true
+      controller: "10.10.10.30"
+      
+    - name: "ap2-wsim"
+      role: "access_point" 
+      model: "AIR-AP2802I"
+      platform: "ap"
+      mgmt_ip: "dhcp"
+      location: "Building A Floor 2"
+      pnp_enabled: true
+      controller: "10.10.10.30"
+      
+    # Management and Monitoring
+    - name: "catalyst-center"
+      role: "network_controller"
+      model: "DNAC-2.3.7"
+      platform: "dnac"
+      mgmt_ip: "10.10.70.50"
+      location: "VM Cloud ESXi-2"
+      services:
+        pnp_server:
+          enabled: true
+          discovery_methods:
+            - dhcp_option43
+            - dns
+            - cloud_redirect
+        assurance:
+          enabled: true
+        sda:
+          enabled: false
+        
+    # End Devices
+    - name: "student-pc"
+      role: "endpoint"
+      model: "Generic PC"
+      platform: "windows"
+      mgmt_ip: "10.10.10.10"
+      vlan: 30
+      
+    - name: "wireless-pc1"
+      role: "endpoint"
+      model: "Generic Laptop"
+      platform: "windows"
+      connection: "wireless"
+      ssid: "Corporate"
+      vlan: 30
+      
+    - name: "wireless-pc2"
+      role: "endpoint"
+      model: "Generic Laptop"
+      platform: "windows"
+      connection: "wireless"
+      ssid: "Guest"
+      vlan: 40
+      
+  # Catalyst Center Configuration
+  catalyst_center:
+    hostname: "catalyst-center"
+    ip_address: "10.10.70.50"
+    credentials:
+      username: "admin"
+      password: "Cisco123!"
+    settings:
+      domain: "campus.local"
+      site_hierarchy:
+        - name: "Global"
+          type: "area"
+          children:
+            - name: "Campus"
+              type: "building"
+              address: "123 Main St, City, State"
+              children:
+                - name: "Building-A"
+                  type: "floor"
+                  rf_model: "Cubes And Walled Offices"
+    pnp_settings:
+      global_credentials:
+        cli:
+          username: "admin"
+          password: "Cisco123!"
+        snmp_ro: "public"
+        snmp_rw: "private"
+        http_read: "admin"
+        http_write: "admin"
+      discovery_timeout: 300
+      config_timeout: 600
+      
+  # PnP Device Profiles
+  pnp_profiles:
+    - name: "Branch-ISR4000"
+      device_family: "Routers"
+      platform: "ISR4000"
+      software_image: "isr4000-universalk9.16.12.05.SPA.bin"
+      template_name: "Branch-Router-Template"
+      day0_config: "branch-router-day0.cfg"
+      
+    - name: "Campus-Switch"
+      device_family: "Switches and Hubs" 
+      platform: "Catalyst 9000"
+      software_image: "cat9k_lite_iosxe.16.12.05.SPA.bin"
+      template_name: "Campus-Switch-Template"
+      day0_config: "campus-switch-day0.cfg"
+      
+    - name: "Wireless-AP"
+      device_family: "Wireless Controller"
+      platform: "Aironet"
+      software_image: "ap2800-k9w8-mx.153-3.JPJ.tar"
+      template_name: "Wireless-AP-Template"
+      controller_ip: "10.10.10.30"

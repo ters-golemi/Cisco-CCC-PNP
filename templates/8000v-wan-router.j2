@@ -1,0 +1,154 @@
+{# Cisco ISR 8000v WAN Router Configuration Template #}
+{# Campus Gateway Router Configuration #}
+{# Device: {{ device.name }} #}
+
+! Cisco ISR 8000v WAN Router Configuration
+! Generated: {{ timestamp }}
+! Device: {{ device.name }}
+! Role: {{ device.role }}
+
+version 16.12
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+service call-home
+!
+hostname {{ device.name }}
+!
+! Enable necessary services
+no ip http server
+ip http secure-server
+ip http authentication local
+!
+! Configure management users
+username admin privilege 15 secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+username pnp privilege 15 secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+!
+! Enable SSH
+ip domain-name {{ topology.catalyst_center.settings.domain }}
+crypto key generate rsa general-keys modulus 2048
+ip ssh version 2
+line vty 0 4
+ login local
+ transport input ssh
+!
+
+! Configure interfaces
+{% for interface in device.interfaces %}
+interface {{ interface.name }}
+ description {{ interface.description }}
+{% if interface.ip == "dhcp" %}
+ ip address dhcp
+{% else %}
+ ip address {{ interface.ip }}
+{% endif %}
+ no shutdown
+{% if interface.type == "routed" %}
+ no switchport
+{% endif %}
+!
+{% endfor %}
+
+! Configure loopback for management
+interface Loopback0
+ description Management Loopback
+ ip address {{ device.mgmt_ip }} 255.255.255.0
+!
+
+! Static routing configuration
+{% if device.routing is defined and device.routing.static_routes is defined %}
+{% for route in device.routing.static_routes %}
+ip route {{ route.destination }} {{ route.next_hop }}
+{% endfor %}
+{% endif %}
+
+! NAT configuration for branch connectivity
+{% set branch_interface = device.interfaces | selectattr('ip', 'search', '10.10.100') | first %}
+{% set internet_interface = device.interfaces | selectattr('ip', 'equalto', 'dhcp') | first %}
+access-list 100 permit ip 10.10.10.0 0.0.0.255 any
+access-list 100 permit ip 10.10.11.0 0.0.0.255 any
+access-list 100 permit ip 10.10.30.0 0.0.0.255 any
+access-list 100 permit ip 10.10.40.0 0.0.0.255 any
+access-list 100 permit ip 10.10.70.0 0.0.0.255 any
+!
+ip nat inside source list 100 interface {{ internet_interface.name }} overload
+!
+interface {{ branch_interface.name }}
+ ip nat inside
+!
+{% for interface in device.interfaces %}
+{% if interface.ip != "dhcp" and "10.10.10" in interface.ip %}
+interface {{ interface.name }}
+ ip nat inside
+!
+{% elif interface.ip == "dhcp" %}
+interface {{ interface.name }}
+ ip nat outside
+!
+{% endif %}
+{% endfor %}
+
+! QoS Configuration for PnP and management traffic
+class-map match-any PNP-TRAFFIC
+ match protocol dhcp
+ match protocol dns
+ match protocol http
+ match protocol https
+!
+policy-map PNP-POLICY
+ class PNP-TRAFFIC
+  priority percent 20
+ class class-default
+  fair-queue
+!
+{% for interface in device.interfaces %}
+{% if interface.type == "routed" and interface.ip != "dhcp" %}
+interface {{ interface.name }}
+ service-policy output PNP-POLICY
+!
+{% endif %}
+{% endfor %}
+
+! SNMP Configuration
+snmp-server community public RO
+snmp-server community private RW
+snmp-server location "{{ device.location }}"
+snmp-server contact "Network Admin"
+!
+
+! NTP Configuration
+ntp server 0.pool.ntp.org
+ntp server 1.pool.ntp.org
+clock timezone UTC 0 0
+!
+
+! Logging
+logging buffered 16384 informational
+logging console warnings
+logging host {{ topology.catalyst_center.ip_address }}
+!
+
+! Security settings
+no ip source-route
+no ip gratuitous-arps
+ip tcp synwait-time 10
+!
+
+! AAA Configuration
+aaa new-model
+aaa authentication login default local
+aaa authorization exec default local
+!
+
+! Line configuration
+line con 0
+ logging synchronous
+ exec-timeout 30 0
+line aux 0
+line vty 0 4
+ exec-timeout 30 0
+ transport input ssh
+!
+
+! End of configuration
+end
