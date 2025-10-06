@@ -74,7 +74,203 @@ By the end of this lab, you will be able to:
 
 ## Pre-Lab Setup
 
-### Task 1: Environment Verification
+### Task 1: Ubuntu Administrator Workstation Preparation
+
+This project must be deployed from an Ubuntu administrator device. Follow these steps to prepare your Ubuntu workstation.
+
+#### System Requirements
+- **Ubuntu Version**: 20.04 LTS or 22.04 LTS (recommended)
+- **Memory**: Minimum 4GB RAM, 8GB recommended
+- **Storage**: 10GB free space
+- **Network**: Internet connectivity and access to lab network
+- **User Privileges**: sudo access required
+
+#### Step 1: Update Ubuntu System
+
+1. **Update Package Lists and System**
+   ```bash
+   sudo apt update && sudo apt upgrade -y
+   ```
+
+2. **Install Essential Build Tools**
+   ```bash
+   sudo apt install -y build-essential software-properties-common apt-transport-https ca-certificates curl gnupg lsb-release
+   ```
+
+#### Step 2: Install Python and Development Dependencies
+
+1. **Install Python 3.8+ and Related Packages**
+   ```bash
+   # Install Python and development headers
+   sudo apt install -y python3 python3-pip python3-dev python3-venv python3-setuptools
+   
+   # Install additional Python tools
+   sudo apt install -y python3-wheel python3-distutils
+   
+   # Verify Python installation
+   python3 --version
+   # Expected output: Python 3.8.x or higher
+   ```
+
+2. **Install pip and Update to Latest Version**
+   ```bash
+   # Ensure pip is installed and updated
+   python3 -m pip install --upgrade pip
+   
+   # Verify pip installation
+   pip3 --version
+   ```
+
+#### Step 3: Install Network and System Dependencies
+
+1. **Install Network Tools**
+   ```bash
+   # Essential network utilities
+   sudo apt install -y net-tools iputils-ping traceroute nmap tcpdump
+   
+   # SSH client and curl for API testing
+   sudo apt install -y openssh-client curl wget
+   
+   # DNS utilities
+   sudo apt install -y dnsutils
+   ```
+
+2. **Install Git and Version Control Tools**
+   ```bash
+   sudo apt install -y git git-lfs
+   
+   # Configure Git (replace with your information)
+   git config --global user.name "Your Name"
+   git config --global user.email "your.email@domain.com"
+   
+   # Verify Git installation
+   git --version
+   ```
+
+3. **Install Text Editors and Development Tools**
+   ```bash
+   # Install nano, vim, and other editors
+   sudo apt install -y nano vim tree
+   
+   # Optional: Install VS Code
+   wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+   sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+   sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+   sudo apt update
+   sudo apt install -y code
+   ```
+
+#### Step 4: Install SSL/TLS and Security Dependencies
+
+1. **Install SSL Certificates and Security Tools**
+   ```bash
+   # SSL/TLS certificates and tools
+   sudo apt install -y ca-certificates openssl
+   
+   # Install additional security tools
+   sudo apt install -y gnupg2 software-properties-common
+   ```
+
+#### Step 5: Python Virtual Environment Setup
+
+1. **Create Project Directory and Virtual Environment**
+   ```bash
+   # Create project directory
+   mkdir -p ~/network-automation
+   cd ~/network-automation
+   
+   # Create virtual environment
+   python3 -m venv cisco-pnp-env
+   
+   # Activate virtual environment
+   source cisco-pnp-env/bin/activate
+   
+   # Verify virtual environment
+   which python
+   # Should show path to virtual environment
+   ```
+
+2. **Install Python Package Dependencies**
+   ```bash
+   # Ensure virtual environment is activated
+   source ~/network-automation/cisco-pnp-env/bin/activate
+   
+   # Upgrade pip in virtual environment
+   pip install --upgrade pip setuptools wheel
+   
+   # Install core dependencies
+   pip install requests PyYAML Jinja2 urllib3 certifi
+   
+   # Install development and testing dependencies
+   pip install pytest pytest-mock colorlog python-dotenv
+   
+   # Install optional network automation libraries
+   pip install netmiko napalm paramiko jsonschema ruamel.yaml
+   
+   # Install documentation tools
+   pip install Sphinx sphinx-rtd-theme
+   ```
+
+#### Step 6: Verify Complete Installation
+
+1. **System Verification Script**
+   ```bash
+   # Create verification script
+   cat << 'EOF' > ~/verify-ubuntu-setup.sh
+   #!/bin/bash
+   
+   echo "=== Ubuntu Setup Verification ==="
+   echo ""
+   
+   # Check Python
+   echo "Python Version:"
+   python3 --version
+   echo ""
+   
+   # Check pip
+   echo "Pip Version:"
+   pip3 --version
+   echo ""
+   
+   # Check Git
+   echo "Git Version:"
+   git --version
+   echo ""
+   
+   # Check network connectivity
+   echo "Network Connectivity:"
+   ping -c 3 8.8.8.8 > /dev/null && echo "✓ Internet connectivity OK" || echo "✗ No internet connectivity"
+   echo ""
+   
+   # Check essential commands
+   echo "Essential Tools:"
+   command -v curl >/dev/null 2>&1 && echo "✓ curl installed" || echo "✗ curl missing"
+   command -v wget >/dev/null 2>&1 && echo "✓ wget installed" || echo "✗ wget missing"
+   command -v ssh >/dev/null 2>&1 && echo "✓ ssh client installed" || echo "✗ ssh client missing"
+   command -v git >/dev/null 2>&1 && echo "✓ git installed" || echo "✗ git missing"
+   echo ""
+   
+   # Check Python packages (if virtual env is active)
+   if [[ "$VIRTUAL_ENV" != "" ]]; then
+       echo "Virtual Environment Active: $VIRTUAL_ENV"
+       echo "Python Packages:"
+       python -c "import requests, yaml, jinja2; print('✓ Core packages installed')" 2>/dev/null || echo "✗ Core packages missing"
+   else
+       echo "⚠ Virtual environment not activated"
+   fi
+   echo ""
+   
+   echo "=== Verification Complete ==="
+   EOF
+   
+   # Make script executable
+   chmod +x ~/verify-ubuntu-setup.sh
+   
+   # Run verification
+   ~/verify-ubuntu-setup.sh
+   ```
+
+### Task 2: Environment Verification
 
 1. **Verify Python Installation**
    ```bash
@@ -84,14 +280,23 @@ By the end of this lab, you will be able to:
 
 2. **Check Network Connectivity**
    ```bash
-   ping 172.16.1.10  # Catalyst Center
-   ping 10.10.10.1   # DHCP Server
+   ping -c 3 172.16.1.10  # Catalyst Center
+   ping -c 3 10.10.10.1   # DHCP Server
+   
+   # Test HTTPS connectivity to Catalyst Center
+   curl -k -I https://172.16.1.10 2>/dev/null | head -1
    ```
 
 3. **Verify Catalyst Center Access**
    - Open browser: `https://172.16.1.10`
    - Login with provided credentials
    - Navigate to System > Settings > External Services > PnP
+
+4. **Test SSH Connectivity to Network Devices**
+   ```bash
+   # Test SSH access to sample device (replace IP as needed)
+   ssh admin@10.10.10.10 "show version" 2>/dev/null || echo "SSH access test - configure as needed"
+   ```
 
 ### Task 2: Download Lab Files
 
@@ -112,24 +317,71 @@ By the end of this lab, you will be able to:
 
 ## Lab Exercise 1: Project Setup and Configuration
 
-### Step 1: Install Dependencies
+### Step 1: Project Installation on Ubuntu
 
-1. **Create Virtual Environment (Recommended)**
+1. **Activate Virtual Environment**
    ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   # OR
-   venv\Scripts\activate     # Windows
+   # Navigate to project directory
+   cd ~/network-automation
+   
+   # Activate virtual environment
+   source cisco-pnp-env/bin/activate
+   
+   # Verify activation
+   echo $VIRTUAL_ENV
+   # Should show path to cisco-pnp-env
    ```
 
-2. **Install Required Packages**
+2. **Clone Project Repository**
    ```bash
+   # Ensure we're in the right directory
+   cd ~/network-automation
+   
+   # Clone the Cisco PnP project
+   git clone https://github.com/ters-golemi/Cisco-CCC-PNP.git
+   cd Cisco-CCC-PNP
+   
+   # Verify project structure
+   ls -la
+   tree . -L 2  # Optional: if tree is installed
+   ```
+
+3. **Install Project Dependencies**
+   ```bash
+   # Install from requirements.txt
    pip install -r requirements.txt
+   
+   # Alternative: Install dependencies manually if requirements.txt fails
+   pip install requests PyYAML Jinja2 urllib3 certifi colorlog python-dotenv
+   pip install netmiko napalm paramiko jsonschema ruamel.yaml
    ```
 
-3. **Verify Installation**
+4. **Verify Complete Installation**
    ```bash
-   python -c "import requests, yaml, jinja2; print('All packages installed successfully')"
+   # Test all required imports
+   python3 -c "
+   try:
+       import requests, yaml, jinja2, urllib3, json, os, time, logging
+       from datetime import datetime
+       print('✓ All core packages imported successfully')
+   except ImportError as e:
+       print(f'✗ Import error: {e}')
+   "
+   
+   # Test project scripts syntax
+   python3 -m py_compile scripts/pnp_automation.py
+   python3 -m py_compile scripts/config_generator.py
+   echo "✓ Scripts compiled successfully"
+   ```
+
+5. **Set Up Project Permissions**
+   ```bash
+   # Make scripts executable
+   chmod +x setup.sh
+   chmod +x scripts/*.py
+   
+   # Verify permissions
+   ls -la setup.sh scripts/
    ```
 
 ### Step 2: Customize Network Topology
@@ -451,11 +703,123 @@ Choose your DHCP server type and follow the appropriate section:
    %PNPA-5-PNP_DISCOVERY_DONE: PnP Discovery done successfully
    ```
 
-### Step 2: Automated Deployment
+### Step 2: Ubuntu Script Execution and Configuration Setup
 
-1. **Run PnP Automation Script**
+1. **Pre-Deployment Environment Check**
    ```bash
-   python scripts/pnp_automation.py \
+   # Ensure virtual environment is active
+   source ~/network-automation/cisco-pnp-env/bin/activate
+   cd ~/network-automation/Cisco-CCC-PNP
+   
+   # Run the built-in setup verification
+   ./setup.sh
+   # Select option 2: "Install Dependencies Only" first
+   
+   # Alternative manual verification
+   python3 scripts/config_generator.py --validate --templates templates --topology topology/pnp-topology.yaml
+   ```
+
+2. **Configure Network Connectivity Testing**
+   ```bash
+   # Test connectivity to Catalyst Center
+   curl -k -X GET https://172.16.1.10/dna/system/api/v1/auth/token \
+     -H "Content-Type: application/json" \
+     -u admin:Cisco123! \
+     --connect-timeout 10
+   
+   # Test DHCP server connectivity
+   ping -c 3 10.10.10.1
+   
+   # Test SSH access to network segment
+   nmap -p 22 10.10.10.0/24 | grep -E "(open|22)"
+   ```
+
+3. **Generate Device Configurations**
+   ```bash
+   # Create output directory
+   mkdir -p generated_configs
+   
+   # Generate configurations for all devices
+   python3 scripts/config_generator.py \
+     --topology topology/pnp-topology.yaml \
+     --templates templates \
+     --output generated_configs \
+     --summary
+   
+   # Verify generated configurations
+   ls -la generated_configs/
+   cat generated_configs/deployment_summary.txt
+   
+   # Review individual device configurations
+   echo "=== Branch Router Configuration Preview ==="
+   head -30 generated_configs/branch-router-01.cfg
+   ```
+
+4. **Test Catalyst Center API Authentication**
+   ```bash
+   # Test authentication with Python script
+   python3 -c "
+   import sys
+   sys.path.append('./scripts')
+   from pnp_automation import CatalystCenterPnP
+   
+   print('Testing Catalyst Center authentication...')
+   try:
+       client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+       success = client.authenticate()
+       if success:
+           print('✓ Authentication successful')
+           
+           # Test getting PnP devices
+           devices = client.get_pnp_devices()
+           print(f'✓ Found {len(devices)} PnP devices in inventory')
+       else:
+           print('✗ Authentication failed')
+   except Exception as e:
+       print(f'✗ Connection error: {e}')
+   "
+   ```
+
+5. **Automated Deployment with Logging**
+   ```bash
+   # Create logs directory
+   mkdir -p logs
+   
+   # Run PnP automation with detailed logging
+   python3 scripts/pnp_automation.py \
+     --host 172.16.1.10 \
+     --username admin \
+     --password Cisco123! \
+     --topology topology/pnp-topology.yaml \
+     --templates templates 2>&1 | tee logs/pnp_deployment_$(date +%Y%m%d_%H%M%S).log
+   ```
+
+6. **Alternative: Step-by-Step Deployment**
+   ```bash
+   # Step 1: Validate templates
+   echo "=== Step 1: Template Validation ==="
+   python3 scripts/config_generator.py --validate --templates templates --topology topology/pnp-topology.yaml
+   
+   # Step 2: Generate configurations
+   echo "=== Step 2: Configuration Generation ==="
+   python3 scripts/config_generator.py \
+     --topology topology/pnp-topology.yaml \
+     --templates templates \
+     --output generated_configs \
+     --summary
+   
+   # Step 3: Test API connectivity
+   echo "=== Step 3: API Connectivity Test ==="
+   python3 -c "
+   from scripts.pnp_automation import CatalystCenterPnP
+   client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+   success = client.authenticate()
+   print('Authentication:', 'SUCCESS' if success else 'FAILED')
+   "
+   
+   # Step 4: Deploy configurations
+   echo "=== Step 4: Device Deployment ==="
+   python3 scripts/pnp_automation.py \
      --host 172.16.1.10 \
      --username admin \
      --password Cisco123! \
@@ -463,10 +827,32 @@ Choose your DHCP server type and follow the appropriate section:
      --templates templates
    ```
 
-2. **Monitor Deployment Progress**
-   - Watch console output for status messages
-   - Check Catalyst Center PnP dashboard
-   - Monitor device console for configuration application
+7. **Monitor Deployment Progress**
+   ```bash
+   # Monitor deployment in separate terminal
+   # Terminal 1: Watch PnP automation log
+   tail -f logs/pnp_deployment_*.log
+   
+   # Terminal 2: Monitor Catalyst Center (if GUI access available)
+   # Open browser: https://172.16.1.10
+   # Navigate: Provision > Plug and Play
+   
+   # Terminal 3: Monitor network device console (if console access available)
+   # Watch for PnP discovery messages and configuration application
+   ```
+
+8. **Ubuntu System Monitoring During Deployment**
+   ```bash
+   # Monitor system resources during deployment
+   # Terminal 4: System monitoring
+   watch -n 2 "echo '=== System Resources ==='; free -h; echo; echo '=== Network Connections ==='; netstat -an | grep :443 | head -5"
+   
+   # Check active Python processes
+   ps aux | grep python | grep pnp
+   
+   # Monitor network traffic to Catalyst Center
+   sudo tcpdump -i any host 172.16.1.10 -c 10 2>/dev/null || echo "Run with sudo for packet capture"
+   ```
 
 ### Step 3: Verify Device Status
 
@@ -550,34 +936,120 @@ Choose your DHCP server type and follow the appropriate section:
 
 ## Lab Exercise 7: Troubleshooting Scenarios
 
-### Scenario 1: Device Not Discovered
+### Scenario 1: Ubuntu Environment Issues
+
+**Problem**: Python dependencies or environment problems
+
+**Ubuntu-Specific Troubleshooting Steps:**
+
+1. **Virtual Environment Issues**
+   ```bash
+   # Check if virtual environment is active
+   echo $VIRTUAL_ENV
+   
+   # Reactivate if needed
+   source ~/network-automation/cisco-pnp-env/bin/activate
+   
+   # Recreate virtual environment if corrupted
+   cd ~/network-automation
+   rm -rf cisco-pnp-env
+   python3 -m venv cisco-pnp-env
+   source cisco-pnp-env/bin/activate
+   pip install --upgrade pip
+   pip install -r Cisco-CCC-PNP/requirements.txt
+   ```
+
+2. **Package Installation Issues**
+   ```bash
+   # Check Ubuntu package dependencies
+   sudo apt install -y python3-dev build-essential libssl-dev libffi-dev
+   
+   # Force reinstall Python packages
+   pip install --force-reinstall requests PyYAML Jinja2
+   
+   # Check for conflicting system packages
+   apt list --installed | grep python3
+   ```
+
+3. **Network Connectivity from Ubuntu**
+   ```bash
+   # Test DNS resolution
+   nslookup 172.16.1.10
+   
+   # Test routing
+   traceroute 172.16.1.10
+   
+   # Test firewall settings
+   sudo ufw status
+   
+   # Test SSL/TLS connectivity
+   openssl s_client -connect 172.16.1.10:443 -servername 172.16.1.10 < /dev/null
+   ```
+
+4. **File Permissions and Access**
+   ```bash
+   # Check file permissions
+   ls -la ~/network-automation/Cisco-CCC-PNP/
+   
+   # Fix permissions if needed
+   chmod +x ~/network-automation/Cisco-CCC-PNP/setup.sh
+   chmod +x ~/network-automation/Cisco-CCC-PNP/scripts/*.py
+   
+   # Check directory ownership
+   ls -ld ~/network-automation/
+   ```
+
+### Scenario 2: Device Not Discovered
 
 **Problem**: Device not appearing in PnP inventory
 
-**Troubleshooting Steps:**
+**Ubuntu-Based Troubleshooting Steps:**
 
-1. **Verify DHCP Configuration**
+1. **Network Diagnostics from Ubuntu**
    ```bash
-   # On device console
-   show ip dhcp binding
-   show ip route
+   # Test network path from Ubuntu to devices
+   ping -c 3 10.10.10.0  # Network segment
+   nmap -sn 10.10.10.0/24  # Network discovery
+   
+   # Check routing table
+   ip route show
+   
+   # Test DHCP server from Ubuntu
+   sudo nmap -sU -p 67 10.10.10.1  # DHCP port check
    ```
 
-2. **Check Option 43**
+2. **DHCP Option 43 Verification from Ubuntu**
    ```bash
-   show dhcp lease
-   debug dhcp detail
+   # Install DHCP testing tools if needed
+   sudo apt install -y dhcp-helper dhcpdump
+   
+   # Monitor DHCP traffic (requires sudo)
+   sudo tcpdump -i any port 67 or port 68 -v
+   
+   # Test DHCP discovery
+   sudo nmap --script dhcp-discover -e eth0
    ```
 
-3. **Verify Network Connectivity**
+3. **Catalyst Center Connectivity from Ubuntu**
    ```bash
-   ping 172.16.1.10  # Catalyst Center
-   telnet 172.16.1.10 80  # HTTP connectivity
+   # Detailed connectivity test
+   curl -v -k https://172.16.1.10/dna/system/api/v1/auth/token 2>&1 | head -20
+   
+   # Test different connection methods
+   telnet 172.16.1.10 80   # HTTP
+   telnet 172.16.1.10 443  # HTTPS
+   
+   # Check SSL certificate
+   echo | openssl s_client -servername 172.16.1.10 -connect 172.16.1.10:443 2>/dev/null | openssl x509 -inform pem -noout -text | grep -A2 "Subject:"
    ```
 
-**Student Exercise:** Document your troubleshooting process:
+**Student Exercise:** Ubuntu troubleshooting documentation:
+- Ubuntu version: `lsb_release -a`
+- Virtual environment path: `echo $VIRTUAL_ENV`
+- Python path: `which python3`
+- Network interface: `ip addr show | grep -E "inet.*scope global"`
 - Issue observed: `________________`
-- Steps taken: `________________`
+- Ubuntu-specific steps taken: `________________`
 - Resolution: `________________`
 
 ### Scenario 2: Configuration Template Failure

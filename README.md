@@ -45,20 +45,47 @@ This project provides comprehensive automation for Cisco Network Plug and Play (
 
 ## Installation
 
-### 1. Clone the Repository
+### Ubuntu Administrator Workstation Required
+This project must be deployed from an Ubuntu administrator device (Ubuntu 20.04+ recommended).
+
+### 1. Automated Ubuntu Setup
 ```bash
-git clone <repository-url>
-cd cisco-pnp-automation
+# Download and run the Ubuntu setup script
+wget https://raw.githubusercontent.com/ters-golemi/Cisco-CCC-PNP/main/ubuntu-setup.sh
+chmod +x ubuntu-setup.sh
+./ubuntu-setup.sh
 ```
 
-### 2. Install Dependencies
+### 2. Manual Installation (Alternative)
 ```bash
+# Update Ubuntu system
+sudo apt update && sudo apt upgrade -y
+
+# Install system dependencies
+sudo apt install -y python3 python3-pip python3-venv git curl openssh-client
+
+# Create project environment
+mkdir -p ~/network-automation
+cd ~/network-automation
+python3 -m venv cisco-pnp-env
+source cisco-pnp-env/bin/activate
+
+# Clone repository
+git clone https://github.com/ters-golemi/Cisco-CCC-PNP.git
+cd Cisco-CCC-PNP
+
+# Install Python dependencies
 pip install -r requirements.txt
 ```
 
 ### 3. Verify Installation
 ```bash
-python scripts/config_generator.py --validate --templates templates --topology examples/pnp-topology.yaml
+# Activate environment
+source ~/network-automation/cisco-pnp-env/bin/activate
+cd ~/network-automation/Cisco-CCC-PNP
+
+# Validate installation
+python scripts/config_generator.py --validate --templates templates --topology topology/pnp-topology.yaml
 ```
 
 ## Configuration

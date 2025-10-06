@@ -1,24 +1,35 @@
 # Quick Start Guide
 
 ## Prerequisites
-- Python 3.8+
+- **Ubuntu 20.04+ Administrator Workstation** (Required)
+- Python 3.8+ (installed via Ubuntu setup)
 - Access to Cisco Catalyst Center
 - DHCP server with Option 43 support
+- Sudo privileges on Ubuntu system
 
-## Installation
+## Ubuntu Environment Setup
 
-1. **Clone the repository:**
+1. **Automated Ubuntu setup (Recommended):**
    ```bash
-   git clone https://github.com/ters-golemi/Cisco-CCC-PNP.git
-   cd Cisco-CCC-PNP
+   # Download and run Ubuntu setup script
+   wget https://raw.githubusercontent.com/ters-golemi/Cisco-CCC-PNP/main/ubuntu-setup.sh
+   chmod +x ubuntu-setup.sh
+   ./ubuntu-setup.sh
    ```
 
-2. **Install dependencies:**
+2. **Activate the environment:**
    ```bash
-   pip install -r requirements.txt
+   source ~/network-automation/activate-env.sh
    ```
 
-3. **Run the setup script:**
+## Project Configuration
+
+1. **Navigate to project directory:**
+   ```bash
+   cd ~/network-automation/Cisco-CCC-PNP
+   ```
+
+2. **Run the setup script:**
    ```bash
    ./setup.sh
    ```

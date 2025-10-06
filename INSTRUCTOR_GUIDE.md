@@ -9,16 +9,69 @@
 
 ### Infrastructure Requirements
 
-1. **Catalyst Center VM/Appliance**
+1. **Ubuntu Administrator Workstations**
+   - **Ubuntu Version**: 20.04 LTS or 22.04 LTS
+   - **Specifications**: 4GB RAM minimum (8GB recommended), 10GB free storage
+   - **Network Access**: Internet connectivity + lab network access
+   - **User Setup**: Standard user accounts with sudo privileges
+   - **Pre-installed**: SSH client, web browser, terminal access
+
+2. **Catalyst Center VM/Appliance**
    - Minimum: 32GB RAM, 8 vCPU, 500GB storage
    - IP: 172.16.1.10/24 (adjust as needed)
    - Admin credentials: admin/Cisco123!
 
-2. **DHCP Server Configuration**
+3. **DHCP Server Configuration**
    - Cisco IOS-XE Router OR Linux with ISC-DHCP
    - IP: 10.10.10.1/24
    - Option 43: `5A1D;B2;K4;I172.16.1.10;J80`
    - Option 43 Hex: `35413144423242334b344937322e31362e312e31304a3830`
+
+### Ubuntu Workstation Preparation Script
+
+Create this script for automated Ubuntu setup across multiple student workstations:
+
+```bash
+#!/bin/bash
+# ubuntu-lab-prep.sh - Automated Ubuntu setup for Cisco PnP Lab
+
+echo "=== Cisco PnP Lab Ubuntu Preparation ==="
+
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install essential packages
+sudo apt install -y build-essential software-properties-common apt-transport-https \
+    ca-certificates curl gnupg lsb-release python3 python3-pip python3-dev \
+    python3-venv python3-setuptools python3-wheel net-tools iputils-ping \
+    traceroute nmap tcpdump openssh-client wget git nano vim tree
+
+# Install Python packages globally for all users
+sudo pip3 install --upgrade pip setuptools wheel
+
+# Create standard project structure
+sudo mkdir -p /opt/network-automation
+sudo chown $USER:$USER /opt/network-automation
+
+# Set up student environment
+cd /home/$USER
+mkdir -p network-automation
+cd network-automation
+
+# Create virtual environment
+python3 -m venv cisco-pnp-env
+source cisco-pnp-env/bin/activate
+
+# Install Python dependencies
+pip install --upgrade pip
+pip install requests PyYAML Jinja2 urllib3 certifi colorlog python-dotenv
+pip install netmiko napalm paramiko jsonschema ruamel.yaml pytest
+
+echo "✓ Ubuntu setup completed for user: $USER"
+echo "Next steps:"
+echo "1. Activate virtual environment: source ~/network-automation/cisco-pnp-env/bin/activate"
+echo "2. Clone project: git clone https://github.com/ters-golemi/Cisco-CCC-PNP.git"
+```
 
 3. **Network Devices** (per team)
    - ISR 8000v (or physical ISR 4000 series)
