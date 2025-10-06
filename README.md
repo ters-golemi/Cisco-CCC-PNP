@@ -80,13 +80,22 @@ devices:
 ### 2. DHCP Option 43 Configuration
 Configure your DHCP server with Option 43 for PnP discovery:
 
-**Cisco DHCP Server:**
+**Cisco IOS-XE Router DHCP Server:**
 ```
+service dhcp
+ip dhcp excluded-address 10.10.10.1 10.10.10.20
 ip dhcp pool PNP_POOL
  network 10.10.10.0 255.255.255.0
  default-router 10.10.10.1
  dns-server 8.8.8.8 8.8.4.4
- option 43 hex 5A1D;B2;K4;I172.16.1.10;J80
+ domain-name lab.local
+ lease 0 12 0
+ option 43 hex 35413144423242334b344937322e31362e312e31304a3830
+exit
+
+! Verification commands
+show ip dhcp pool
+show ip dhcp binding
 ```
 
 **ISC DHCP Server (Linux):**

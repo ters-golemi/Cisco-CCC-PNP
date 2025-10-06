@@ -15,10 +15,10 @@
    - Admin credentials: admin/Cisco123!
 
 2. **DHCP Server Configuration**
-   - Windows Server 2019+ OR Linux with ISC-DHCP
+   - Cisco IOS-XE Router OR Linux with ISC-DHCP
    - IP: 10.10.10.1/24
    - Option 43: `5A1D;B2;K4;I172.16.1.10;J80`
-   - Option 43 Hex: `35413144;42323b4b343b493137322e31362e312e31303b4a3830`
+   - Option 43 Hex: `35413144423242334b344937322e31362e312e31304a3830`
 
 3. **Network Devices** (per team)
    - ISR 8000v (or physical ISR 4000 series)
@@ -39,7 +39,21 @@ Create student accounts with following access:
 
 **DHCP Option 43 Calculation:**
 - String: `5A1D;B2;K4;I172.16.1.10;J80`
-- Hex: `35413144;42323b4b343b493137322e31362e312e31303b4a3830`
+- Hex: `35413144423242334b344937322e31362e312e31304a3830`
+
+**Complete Cisco IOS-XE DHCP Configuration:**
+```
+service dhcp
+ip dhcp excluded-address 10.10.10.1 10.10.10.20
+ip dhcp pool PNP_POOL
+ network 10.10.10.0 255.255.255.0
+ default-router 10.10.10.1
+ dns-server 8.8.8.8 8.8.4.4
+ domain-name lab.local
+ lease 0 12 0
+ option 43 hex 35413144423242334b344937322e31362e312e31304a3830
+exit
+```
 
 **Student Analysis Questions (Exercise 3):**
 - Management IP: `10.10.10.10` (branch router)

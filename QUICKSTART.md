@@ -32,10 +32,17 @@
 
 2. **Configure DHCP Option 43:**
    ```
-   # Cisco DHCP Server
-   option 43 hex 5A1D;B2;K4;I172.16.1.10;J80
+   # Cisco IOS-XE Router DHCP Configuration
+   service dhcp
+   ip dhcp excluded-address 10.10.10.1 10.10.10.20
+   ip dhcp pool PNP_POOL
+    network 10.10.10.0 255.255.255.0
+    default-router 10.10.10.1
+    dns-server 8.8.8.8 8.8.4.4
+    option 43 hex 35413144423242334b344937322e31362e312e31304a3830
+   exit
    
-   # Replace 172.16.1.10 with your Catalyst Center IP
+   # Replace the hex value with your calculated Option 43 for your Catalyst Center IP
    ```
 
 3. **Generate configurations:**

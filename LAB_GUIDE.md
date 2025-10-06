@@ -207,7 +207,7 @@ By the end of this lab, you will be able to:
 
 Choose your DHCP server type and follow the appropriate section:
 
-#### Option A: Cisco Router DHCP
+#### Option A: Cisco IOS-XE Router DHCP
 
 1. **Access Router Console**
    ```
@@ -215,30 +215,79 @@ Choose your DHCP server type and follow the appropriate section:
    Router# configure terminal
    ```
 
-2. **Configure DHCP Pool**
+2. **Basic DHCP Configuration**
    ```
-   ip dhcp excluded-address 10.10.10.1 10.10.10.10
+   ! Enable DHCP service
+   service dhcp
+   
+   ! Exclude static IP addresses from DHCP pool
+   ip dhcp excluded-address 10.10.10.1 10.10.10.20
+   ip dhcp excluded-address 10.10.10.250 10.10.10.255
+   ```
+
+3. **Configure PnP DHCP Pool**
+   ```
+   ! Create DHCP pool for PnP devices
    ip dhcp pool PNP_POOL
     network 10.10.10.0 255.255.255.0
     default-router 10.10.10.1
     dns-server 8.8.8.8 8.8.4.4
-    option 43 hex [YOUR_HEX_VALUE_HERE]
+    domain-name lab.local
+    lease 0 12 0
+    option 43 hex 35413144423242334b344937322e31362e312e31304a3830
    exit
-   service dhcp
    ```
 
-#### Option B: Windows DHCP Server
+4. **Alternative Option 43 Configuration Methods**
+   ```
+   ! Method 1: Using hex string directly
+   ip dhcp pool PNP_POOL
+    option 43 hex 35413144423242334b344937322e31362e312e31304a3830
+   
+   ! Method 2: Using ASCII string (if supported)
+   ip dhcp pool PNP_POOL
+    option 43 ascii "5A1D;B2;K4;I172.16.1.10;J80"
+   
+   ! Method 3: Step-by-step hex calculation
+   ! String: 5A1D;B2;K4;I172.16.1.10;J80
+   ! Each character to hex: 35413144423242334b344937322e31362e312e31304a3830
+   ```
 
-1. **Open DHCP Console**
-   - Start → Administrative Tools → DHCP
+5. **Verification Commands**
+   ```
+   ! Verify DHCP pool configuration
+   show ip dhcp pool PNP_POOL
+   
+   ! Monitor DHCP bindings
+   show ip dhcp binding
+   
+   ! Check DHCP conflicts
+   show ip dhcp conflict
+   
+   ! Debug DHCP operations
+   debug ip dhcp server events
+   debug ip dhcp server packet
+   ```
 
-2. **Configure Scope Options**
-   - Right-click scope → Scope Options
-   - Add Option 43 (Vendor Specific Info)
-   - Data type: Binary
-   - Value: `[YOUR_HEX_VALUE_HERE]`
+6. **Advanced DHCP Configuration**
+   ```
+   ! Multiple VLAN support
+   ip dhcp pool VLAN10_POOL
+    network 10.10.10.0 255.255.255.0
+    default-router 10.10.10.1
+    option 43 hex 35413144423242334b344937322e31362e312e31304a3830
+   
+   ip dhcp pool VLAN20_POOL
+    network 10.10.20.0 255.255.255.0
+    default-router 10.10.20.1
+    option 43 hex 35413144423242334b344937322e31362e312e31304a3830
+   
+   ! DHCP relay configuration for remote subnets
+   interface vlan 30
+    ip helper-address 10.10.10.1
+   ```
 
-#### Option C: Linux ISC-DHCP
+#### Option B: Linux ISC-DHCP
 
 1. **Edit DHCP Configuration**
    ```bash
@@ -253,6 +302,9 @@ Choose your DHCP server type and follow the appropriate section:
      range 10.10.10.100 10.10.10.200;
      option routers 10.10.10.1;
      option domain-name-servers 8.8.8.8, 8.8.4.4;
+     option domain-name "lab.local";
+     default-lease-time 43200;
+     max-lease-time 86400;
      option pnp-string "5A1D;B2;K4;I172.16.1.10;J80";
    }
    ```
@@ -260,6 +312,16 @@ Choose your DHCP server type and follow the appropriate section:
 3. **Restart DHCP Service**
    ```bash
    sudo systemctl restart isc-dhcp-server
+   sudo systemctl status isc-dhcp-server
+   ```
+
+4. **Verify DHCP Operation**
+   ```bash
+   # Check DHCP leases
+   sudo cat /var/lib/dhcp/dhcpd.leases
+   
+   # Monitor DHCP logs
+   sudo tail -f /var/log/syslog | grep dhcp
    ```
 
 ### Step 3: Verify DHCP Configuration
