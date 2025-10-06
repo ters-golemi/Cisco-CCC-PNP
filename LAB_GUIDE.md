@@ -12,13 +12,15 @@
 
 By the end of this lab, you will be able to:
 
-1. Configure and deploy Cisco Network Plug and Play (PnP) automation
-2. Set up DHCP Option 43 for automatic device discovery
-3. Create and customize Jinja2 configuration templates with 3.1.x enhancements
-4. Use Python scripts to interact with Cisco Catalyst Center 3.1.x APIs
-5. Leverage enhanced task management and site hierarchy features
-6. Provision multiple network devices using zero-touch deployment
-7. Troubleshoot common PnP deployment issues with 3.1.x diagnostic tools
+1. Configure and deploy Cisco Network Plug and Play (PnP) automation using Catalyst Center 3.1.x
+2. Set up DHCP Option 43 for automatic device discovery with enhanced 3.1.x protocol support
+3. Create and customize Jinja2 configuration templates with 3.1.x template versioning and commit features
+4. Use Python scripts to interact with Catalyst Center 3.1.x Intent APIs with improved authentication
+5. Leverage enhanced task management, real-time monitoring, and advanced site hierarchy features
+6. Implement geographic site management with latitude/longitude support in 3.1.x
+7. Provision multiple network devices using zero-touch deployment with enhanced workflow management
+8. Monitor device provisioning status using 3.1.x enhanced task tracking and progress indicators
+9. Troubleshoot common PnP deployment issues using 3.1.x diagnostic tools and improved logging
 
 ---
 
@@ -52,12 +54,42 @@ By the end of this lab, you will be able to:
 
 ---
 
+## Catalyst Center 3.1.x Enhanced Features
+
+This lab leverages the advanced capabilities introduced in Cisco Catalyst Center 3.1.x:
+
+### New API Enhancements
+- **Enhanced Authentication**: Automatic token renewal and improved session management
+- **Advanced Task Management**: Real-time progress tracking with detailed status reporting
+- **Improved Error Handling**: Better exception management and retry logic for API calls
+- **Enhanced Filtering**: Device state filtering and advanced query capabilities
+
+### Site Management Improvements
+- **Geographic Information**: Latitude/longitude support for site locations
+- **Enhanced Site Hierarchy**: Multi-level site organization with area/building/floor structure
+- **Automated Device Assignment**: Streamlined device-to-site assignment workflows
+
+### Template Management Features
+- **Template Versioning**: Automatic version control and commit functionality
+- **Project Organization**: Template grouping and project-based management
+- **Rollback Support**: Template rollback capabilities for configuration changes
+- **Enhanced Validation**: Improved Jinja2 template syntax validation
+
+### Monitoring and Diagnostics
+- **Real-time Task Monitoring**: Live progress updates during device provisioning
+- **Enhanced Device Status**: Detailed provisioning state information and workflow tracking
+- **Improved Logging**: Comprehensive audit trails and diagnostic information
+- **Advanced Troubleshooting**: Better error messages and resolution guidance
+
+---
+
 ## Equipment Requirements
 
 ### Virtual Infrastructure
-- **Catalyst Center**: Version 2.3.5+ (VM or physical appliance)
-- **DHCP Server**: Windows Server, Linux ISC-DHCP, or Cisco router
-- **Python Environment**: Python 3.8+ with internet access
+- **Catalyst Center**: Version 3.1.x required (3.1.0+ recommended for full feature support)
+- **DHCP Server**: Windows Server, Linux ISC-DHCP, or Cisco router with Option 43 support
+- **Python Environment**: Python 3.8+ with enhanced REST API libraries for 3.1.x compatibility
+- **Network Connectivity**: Reliable connection to Catalyst Center for API operations
 
 ### Network Devices (Virtual or Physical)
 - **ISR 8000v**: Branch router simulation
@@ -627,6 +659,45 @@ Choose your DHCP server type and follow the appropriate section:
    - Interface configurations
    - Default routes
 
+### Step 3: Test Catalyst Center 3.1.x Template Management
+
+1. **Create Template with 3.1.x Features**
+   ```bash
+   python3 -c "
+   from scripts.pnp_automation import CatalystCenterPnP
+   client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+   client.authenticate()
+   
+   # Read sample template
+   with open('templates/8000v-branch-router.j2', 'r') as f:
+       template_content = f.read()
+   
+   # Create template with 3.1.x enhanced features
+   template_id = client.create_configuration_template(
+       template_name='Lab_Branch_Router_3.1x',
+       device_type='Routers',
+       template_content=template_content,
+       project_name='PnP_Automation_Lab'
+   )
+   
+   if template_id:
+       print(f'Template created successfully with ID: {template_id}')
+       
+       # List templates in project (3.1.x feature)
+       templates = client.get_templates(project_name='PnP_Automation_Lab')
+       print(f'Templates in project: {len(templates)}')
+   else:
+       print('Template creation failed')
+   "
+   ```
+
+2. **Expected Output (3.1.x Enhanced):**
+   ```
+   Template created successfully with ID: abc123-def456-ghi789
+   Template committed successfully
+   Templates in project: 1
+   ```
+
 3. **Student Exercise: Configuration Analysis**
    
    **Question 1:** What is the management IP address of your branch router?
@@ -653,41 +724,122 @@ Choose your DHCP server type and follow the appropriate section:
    - Menu: Provision → Plug and Play
    - Verify PnP service is running
 
-### Step 2: Verify API Connectivity
+### Step 2: Verify Catalyst Center 3.1.x API Connectivity
 
-1. **Test Authentication**
+1. **Test Enhanced Authentication (3.1.x Features)**
    ```bash
    python3 -c "
    from scripts.pnp_automation import CatalystCenterPnP
    client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
    success = client.authenticate()
    print('Authentication: Success' if success else 'Failed')
+   
+   # Test 3.1.x specific features
+   if success:
+       print(f'Token expires in: {client.token_expires} seconds')
+       print(f'Token valid: {client.is_token_valid()}')
    "
    ```
 
-2. **Expected Output:**
+2. **Expected Output (3.1.x Enhanced):**
    ```
    Authentication: Success
+   Token expires in: 3600 seconds
+   Token valid: True
    ```
 
-### Step 3: Check Existing PnP Devices
+### Step 3: Check Existing PnP Devices with 3.1.x Filtering
 
-1. **List Current PnP Devices**
+1. **List Current PnP Devices (Enhanced 3.1.x API)**
    ```bash
    python3 -c "
    from scripts.pnp_automation import CatalystCenterPnP
    client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
    client.authenticate()
-   devices = client.get_pnp_devices()
-   print(f'Found {len(devices)} PnP devices')
-   for device in devices:
-       print(f'- {device.get(\"deviceInfo\", {}).get(\"serialNumber\", \"Unknown\")}')
+   
+   # Get all devices
+   all_devices = client.get_pnp_devices()
+   print(f'Found {len(all_devices)} total PnP devices')
+   
+   # Use 3.1.x filtering capabilities
+   unclaimed_devices = client.get_pnp_devices(device_state='Unclaimed')
+   print(f'Unclaimed devices: {len(unclaimed_devices)}')
+   
+   provisioned_devices = client.get_pnp_devices(device_state='Provisioned')
+   print(f'Provisioned devices: {len(provisioned_devices)}')
+   
+   for device in all_devices:
+       serial = device.get('deviceInfo', {}).get('serialNumber', 'Unknown')
+       state = device.get('deviceInfo', {}).get('state', 'Unknown')
+       print(f'- {serial} (State: {state})')
    "
    ```
 
 ---
 
-## Lab Exercise 5: Device Deployment
+## Lab Exercise 5: Catalyst Center 3.1.x Site Management
+
+### Step 1: Create Enhanced Site Hierarchy
+
+1. **Create Site with Geographic Information (3.1.x Feature)**
+   ```bash
+   python3 -c "
+   from scripts.pnp_automation import CatalystCenterPnP
+   client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+   client.authenticate()
+   
+   # Create area site with geographic information
+   area_id = client.create_site_hierarchy(
+       site_name='Lab_Campus_Area',
+       site_type='area',
+       parent_name='Global',
+       address='123 Technology Drive, San Jose, CA 95134',
+       country='United States',
+       latitude=37.4419,
+       longitude=-121.9438
+   )
+   
+   if area_id:
+       print(f'Area site created: {area_id}')
+       
+       # Create building under area
+       building_id = client.create_site_hierarchy(
+           site_name='Lab_Main_Building',
+           site_type='building', 
+           parent_name='Lab_Campus_Area',
+           address='123 Technology Drive, Building A'
+       )
+       
+       if building_id:
+           print(f'Building site created: {building_id}')
+   "
+   ```
+
+### Step 2: Verify Site Creation
+
+1. **List Sites with 3.1.x Filtering**
+   ```bash
+   python3 -c "
+   from scripts.pnp_automation import CatalystCenterPnP
+   client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+   client.authenticate()
+   
+   # Get all sites
+   sites = client.get_sites()
+   print(f'Total sites: {len(sites)}')
+   
+   # Filter by site type
+   areas = client.get_sites(site_type='area')
+   buildings = client.get_sites(site_type='building')
+   
+   print(f'Area sites: {len(areas)}')
+   print(f'Building sites: {len(buildings)}')
+   "
+   ```
+
+---
+
+## Lab Exercise 6: Device Deployment
 
 ### Step 1: Physical Device Preparation
 
@@ -818,14 +970,42 @@ Choose your DHCP server type and follow the appropriate section:
    print('Authentication:', 'SUCCESS' if success else 'FAILED')
    "
    
-   # Step 4: Deploy configurations
-   echo "=== Step 4: Device Deployment ==="
-   python3 scripts/pnp_automation.py \
-     --host 172.16.1.10 \
-     --username admin \
-     --password Cisco123! \
-     --topology topology/pnp-topology.yaml \
-     --templates templates
+   # Step 4: Deploy configurations with 3.1.x task monitoring
+   echo "=== Step 4: Enhanced Device Deployment (3.1.x) ==="
+   python3 -c "
+   from scripts.pnp_automation import CatalystCenterPnP
+   import time
+   
+   client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+   client.authenticate()
+   
+   # Get unclaimed devices
+   devices = client.get_pnp_devices(device_state='Unclaimed')
+   print(f'Found {len(devices)} unclaimed devices')
+   
+   for device in devices[:1]:  # Process first device as example
+       device_id = device.get('id')
+       serial = device.get('deviceInfo', {}).get('serialNumber', 'Unknown')
+       print(f'Processing device: {serial}')
+       
+       # Claim device with enhanced 3.1.x API
+       task_id = client.claim_pnp_device(
+           device_id=device_id,
+           site_id='Lab_Main_Building'  # Use site created earlier
+       )
+       
+       if task_id:
+           print(f'Device claim initiated. Task ID: {task_id}')
+           
+           # Monitor task progress (3.1.x feature)
+           result = client.wait_for_task_completion(task_id, max_wait_time=300)
+           if result:
+               print(f'Device {serial} provisioned successfully')
+           else:
+               print(f'Device {serial} provisioning failed or timed out')
+       else:
+           print(f'Failed to claim device {serial}')
+   "
    ```
 
 7. **Monitor Deployment Progress**
@@ -935,7 +1115,7 @@ Choose your DHCP server type and follow the appropriate section:
 
 ---
 
-## Lab Exercise 7: Troubleshooting Scenarios
+## Lab Exercise 7: Catalyst Center 3.1.x Troubleshooting and Diagnostics
 
 ### Scenario 1: Ubuntu Environment Issues
 
@@ -1099,6 +1279,68 @@ Choose your DHCP server type and follow the appropriate section:
    show vlan brief
    show interfaces trunk
    show spanning-tree
+   ```
+
+### Scenario 4: Catalyst Center 3.1.x Enhanced Diagnostics
+
+**Use Case**: Leveraging 3.1.x diagnostic capabilities for troubleshooting
+
+**Enhanced Diagnostic Steps:**
+
+1. **Token and Authentication Diagnostics**
+   ```bash
+   python3 -c "
+   from scripts.pnp_automation import CatalystCenterPnP
+   client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+   
+   # Test authentication with detailed diagnostics
+   success = client.authenticate()
+   print(f'Authentication Success: {success}')
+   
+   if success:
+       print(f'Token Valid: {client.is_token_valid()}')
+       print(f'Token Expires: {client.token_expires} seconds')
+       print(f'Automatic Renewal: Available')
+   "
+   ```
+
+2. **Enhanced Task Status Monitoring**
+   ```bash
+   python3 -c "
+   from scripts.pnp_automation import CatalystCenterPnP
+   client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+   client.authenticate()
+   
+   # Get recent tasks for monitoring
+   devices = client.get_pnp_devices()
+   for device in devices:
+       status = client.get_device_provisioning_status(device.get('id'))
+       
+       print(f'Device: {status.get(\"serialNumber\", \"Unknown\")}')
+       print(f'State: {status.get(\"state\", \"Unknown\")}')
+       print(f'Onboard State: {status.get(\"onbState\", \"Unknown\")}')
+       print(f'Last Contact: {status.get(\"lastContact\", \"Never\")}')
+       print(f'Provision Details: {len(status.get(\"provisionDetails\", []))} entries')
+       print('---')
+   "
+   ```
+
+3. **Site and Device Assignment Verification**
+   ```bash
+   python3 -c "
+   from scripts.pnp_automation import CatalystCenterPnP
+   client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+   client.authenticate()
+   
+   # Verify site hierarchy
+   sites = client.get_sites()
+   print(f'Total Sites: {len(sites)}')
+   
+   for site in sites:
+       site_name = site.get('name', 'Unknown')
+       site_type = site.get('type', 'Unknown')
+       print(f'Site: {site_name} (Type: {site_type})')
+   "
    ```
 
 ---
