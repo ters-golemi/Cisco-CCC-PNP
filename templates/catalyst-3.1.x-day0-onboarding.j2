@@ -1,0 +1,172 @@
+{# Catalyst Center 3.1.x PnP Day-Zero Onboarding Configuration Template #}
+{# Universal template for basic device onboarding - follows official 3.1.x guidelines #}
+{# Device: {{ device.name }} #}
+
+! Catalyst Center 3.1.x PnP Day-Zero Onboarding Configuration
+! Generated: {{ timestamp }}
+! Device: {{ device.name }}
+! Template Version: 3.1.x-compatible
+
+!
+! ===== PnP Label Trustpoint Configuration =====
+! Note: This trustpoint is automatically removed after successful onboarding per 3.1.x
+!
+
+!
+! ===== Enhanced Device Credentials for 3.1.x =====
+!
+enable secret {{ enable_password | default('Cisco123!') }}
+!
+! Local users with enhanced privilege levels
+username {{ local_username | default('admin') }} privilege 15 secret {{ local_password | default('Cisco123!') }}
+username {{ dnac_username | default('dnac') }} privilege 15 secret {{ dnac_password | default('Cisco123!') }}
+!
+
+!
+! ===== SSH Configuration (3.1.x requirement) =====
+!
+ip domain-name {{ domain_name | default('lab.local') }}
+crypto key generate rsa general-keys modulus 2048
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+line vty 0 15
+ transport input ssh
+ login local
+ exec-timeout 30 0
+!
+
+!
+! ===== SNMP Configuration for 3.1.x Management =====
+!
+{% if snmp_read_community %}
+snmp-server community {{ snmp_read_community }} RO
+{% endif %}
+{% if snmp_write_community %}
+snmp-server community {{ snmp_write_community }} RW
+{% endif %}
+{% if snmp_v3_user %}
+snmp-server user {{ snmp_v3_user }} {{ snmp_v3_group | default('v3default') }} v3 auth {{ snmp_v3_auth_type | default('sha') }} {{ snmp_v3_auth_password }} priv {{ snmp_v3_priv_type | default('aes128') }} {{ snmp_v3_priv_password }}
+{% endif %}
+!
+snmp-server location {{ device_location | default('PnP Lab Environment') }}
+snmp-server contact {{ device_contact | default('Network Operations') }}
+!
+
+!
+! ===== Enhanced HTTP/HTTPS Configuration for 3.1.x =====
+!
+no ip http server
+ip http secure-server
+ip http authentication local
+{% if management_interface %}
+ip http client source-interface {{ management_interface }}
+{% endif %}
+!
+
+!
+! ===== NETCONF Configuration (3.1.x enhancement) =====
+! Enabled automatically for supported Catalyst 9000 series running IOS XE 17.3+
+!
+{% if enable_netconf | default(true) %}
+netconf-yang
+{% if device.platform and 'catalyst' in device.platform.lower() %}
+netconf-yang cisco-odm polling-enable
+{% endif %}
+{% endif %}
+!
+
+!
+! ===== VTP Configuration (3.1.x best practice) =====
+!
+{% if device.type == 'switch' %}
+vtp mode transparent
+{% endif %}
+!
+
+!
+! ===== NTP Configuration (3.1.x certificate validation requirement) =====
+!
+{% if ntp_server %}
+ntp server {{ ntp_server }}
+{% endif %}
+{% if ntp_server_backup %}
+ntp server {{ ntp_server_backup }}
+{% endif %}
+{% if not ntp_server %}
+! Default NTP servers for certificate validation
+ntp server pool.ntp.org
+ntp server time.nist.gov
+{% endif %}
+!
+
+!
+! ===== Logging Configuration (3.1.x enhanced monitoring) =====
+!
+logging buffered 16384
+logging console
+logging monitor
+logging source-interface {{ logging_source_interface | default('Loopback0') }}
+{% if syslog_server %}
+logging host {{ syslog_server }}
+{% endif %}
+!
+
+!
+! ===== Management Interface Configuration =====
+!
+{% if management_interface and management_ip %}
+interface {{ management_interface }}
+ description Management Interface - Catalyst Center 3.1.x
+ ip address {{ management_ip }} {{ management_mask | default('255.255.255.0') }}
+ no shutdown
+!
+{% endif %}
+
+!
+! ===== Default Route Configuration =====
+!
+{% if default_gateway %}
+ip route 0.0.0.0 0.0.0.0 {{ default_gateway }}
+{% endif %}
+!
+
+!
+! ===== Device-Specific VRF Management (if required) =====
+!
+{% if use_mgmt_vrf %}
+vrf definition Mgmt-vrf
+ address-family ipv4
+ exit-address-family
+!
+interface {{ management_interface }}
+ vrf forwarding Mgmt-vrf
+ ip address {{ management_ip }} {{ management_mask | default('255.255.255.0') }}
+ no shutdown
+!
+ip route vrf Mgmt-vrf 0.0.0.0 0.0.0.0 {{ default_gateway }}
+{% endif %}
+!
+
+!
+! ===== Application QoS Configuration (3.1.x feature) =====
+! Note: QoS policies will be applied automatically during site assignment
+!
+
+!
+! ===== SUDI Certificate Validation (3.1.x security enhancement) =====
+! SUDI validation is handled automatically by 3.1.x PnP process
+!
+
+!
+! ===== End of Day-Zero Configuration =====
+!
+! This template provides basic connectivity and manageability
+! Additional site-specific and role-specific configurations
+! will be applied during the provisioning workflow
+!
+
+end
+
+! Save configuration to startup
+copy running-config startup-config

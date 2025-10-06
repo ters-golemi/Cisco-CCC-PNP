@@ -1,5 +1,5 @@
 {# Cisco Catalyst 9800-L WLC Configuration Template #}
-{# Wireless LAN Controller Configuration #}
+{# Wireless LAN Controller Configuration - Catalyst Center 3.1.x Compatible #}
 {# Device: {{ device.name }} #}
 
 version 17.06.01
@@ -9,8 +9,12 @@ service call-home
 !
 hostname {{ device.name }}
 !
-! System Configuration
-clock timezone UTC 0 0
+! System Configuration for 3.1.x compatibility
+clock timezone {{ device.timezone | default('UTC') }} 0 0
+!
+! NTP configuration for 3.1.x certificate validation
+ntp server {{ ntp_server | default('172.16.1.1') }}
+ntp server {{ ntp_server_backup | default('pool.ntp.org') }}
 !
 boot system flash bootflash:cat9k_lite_iosxe.17.06.01.SPA.bin
 !
@@ -20,14 +24,27 @@ license boot level network-advantage addon dna-advantage
 ! Memory Configuration
 memory free low-watermark processor 72329
 !
-! Enable services
+! Enable enhanced services for 3.1.x
 no ip http server
 ip http secure-server
 ip http max-connections 16
+ip http client source-interface {{ device.mgmt_interface | default('GigabitEthernet0/0/0') }}
 !
-! Management Users
+! Enhanced NETCONF/RESTCONF for 3.1.x wireless management
+netconf-yang
+netconf-yang cisco-odm polling-enable
+netconf max-sessions 16
+restconf
+!
+! Management Users (3.1.x credential requirements)
 username admin privilege 15 secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
 username dnac privilege 15 secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+!
+! SNMP configuration for 3.1.x wireless monitoring
+snmp-server community {{ snmp.read_community | default('cisco123') }} RO
+snmp-server community {{ snmp.write_community | default('cisco123') }} RW
+snmp-server location {{ device.location | default('Wireless Lab') }}
+snmp-server contact {{ device.contact | default('Wireless Admin') }}
 !
 ! VRF Configuration for management isolation
 vrf definition Mgmt-vrf

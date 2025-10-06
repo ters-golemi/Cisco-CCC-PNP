@@ -469,24 +469,49 @@ This project must be deployed from an Ubuntu administrator device. Follow these 
 
 ---
 
-## Lab Exercise 2: DHCP Option 43 Configuration
+## Lab Exercise 2: DHCP Option 43 Configuration (3.1.x Enhanced)
 
-### Step 1: Calculate Option 43 Value
+### Step 1: Calculate Option 43 Value (3.1.x Format)
 
-1. **Generate Option 43 String**
+1. **Generate Basic Option 43 String (HTTP)**
    ```bash
    python3 -c "
    catalyst_ip = '172.16.1.10'  # Replace with your Catalyst Center IP
-   option43 = f'5A1D;B2;K4;I{catalyst_ip};J80'
+   option43 = f'5A1N;B2;K4;I{catalyst_ip};J80;'
    hex_value = option43.encode('ascii').hex()
-   print(f'Option 43 String: {option43}')
-   print(f'Option 43 Hex: {hex_value}')
+   print(f'Basic Option 43 String: {option43}')
+   print(f'Basic Option 43 Hex: {hex_value}')
    "
    ```
 
-2. **Record Your Values:**
-   - Option 43 String: `________________`
-   - Option 43 Hex: `________________`
+2. **Generate Enhanced Option 43 String (HTTPS with NTP) - 3.1.x Recommended**
+   ```bash
+   python3 -c "
+   catalyst_ip = '172.16.1.10'  # Replace with your Catalyst Center IP
+   ntp_server = '172.16.1.1'    # Replace with your NTP server IP
+   option43 = f'5A1D;B2;K5;I{catalyst_ip};J443;Z{ntp_server};'
+   hex_value = option43.encode('ascii').hex()
+   print(f'Enhanced 3.1.x Option 43 String: {option43}')
+   print(f'Enhanced 3.1.x Option 43 Hex: {hex_value}')
+   "
+   ```
+
+3. **Generate FQDN-Based Option 43 (3.1.x FQDN Support)**
+   ```bash
+   python3 -c "
+   catalyst_fqdn = 'catalyst.lab.local'  # Replace with your FQDN
+   ntp_server = '172.16.1.1'            # Replace with your NTP server
+   option43 = f'5A1D;B1;K5;I{catalyst_fqdn};J443;Z{ntp_server};'
+   hex_value = option43.encode('ascii').hex()
+   print(f'FQDN-based 3.1.x Option 43 String: {option43}')
+   print(f'FQDN-based 3.1.x Option 43 Hex: {hex_value}')
+   "
+   ```
+
+4. **Record Your Values:**
+   - Basic Option 43 String: `________________`
+   - Enhanced 3.1.x Option 43 String: `________________`
+   - FQDN-based Option 43 String: `________________`
 
 ### Step 2: Configure DHCP Server
 
@@ -839,21 +864,85 @@ Choose your DHCP server type and follow the appropriate section:
 
 ---
 
-## Lab Exercise 6: Device Deployment
+## Lab Exercise 6: 3.1.x Device Provisioning Workflows
 
-### Step 1: Physical Device Preparation
+### Step 1: Validate PnP Prerequisites (3.1.x)
 
-1. **Power Cycle Devices**
-   - Ensure devices have factory default configuration
-   - Connect to management network (DHCP-enabled segment)
-   - Power on devices one by one
-
-2. **Monitor Console Output**
+1. **Run 3.1.x Prerequisites Validation**
+   ```bash
+   python3 -c "
+   from scripts.pnp_automation import CatalystCenterPnP
+   client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+   
+   # Validate all prerequisites according to 3.1.x documentation
+   results = client.validate_pnp_prerequisites()
+   
+   print('=== PnP Prerequisites Validation (3.1.x) ===')
+   for check, passed in results.items():
+       status = 'PASS' if passed else 'FAIL'
+       print(f'{check:<20}: {status}')
+   
+   all_passed = all(results.values())
+   print(f'\\nOverall Status: {\"READY\" if all_passed else \"NOT READY\"} for PnP deployment')
+   "
    ```
-   # Expected PnP discovery messages:
+
+### Step 2: Generate DHCP Option 43 Strings
+
+1. **Generate Multiple Option 43 Formats for 3.1.x**
+   ```bash
+   python3 -c "
+   from scripts.pnp_automation import CatalystCenterPnP
+   client = CatalystCenterPnP('172.16.1.10', 'admin', 'Cisco123!')
+   
+   # Generate various Option 43 strings for different scenarios
+   print('=== DHCP Option 43 Generator (3.1.x) ===\\n')
+   
+   # Basic HTTP Option 43
+   basic = client.generate_dhcp_option43_string(
+       catalyst_center_ip='172.16.1.10',
+       port=80,
+       protocol='HTTP'
+   )
+   print(f'Basic HTTP: {basic}')
+   
+   # Enhanced HTTPS with NTP (recommended for 3.1.x)
+   enhanced = client.generate_dhcp_option43_string(
+       catalyst_center_ip='172.16.1.10',
+       port=443,
+       protocol='HTTPS',
+       ntp_server='172.16.1.1'
+   )
+   print(f'Enhanced HTTPS: {enhanced}')
+   
+   # FQDN-based with security features
+   fqdn = client.generate_dhcp_option43_string(
+       catalyst_center_ip='catalyst.lab.local',
+       port=443,
+       protocol='HTTPS',
+       ntp_server='ntp.lab.local',
+       trusted_cert_url='tftp://172.16.1.100/ios.p7b'
+   )
+   print(f'FQDN with Security: {fqdn}')
+   "
+   ```
+
+### Step 3: Physical Device Preparation (3.1.x Guidelines)
+
+1. **Prepare Devices According to 3.1.x Best Practices**
+   - Ensure devices are in factory default state (critical for 3.1.x)
+   - Connect to management network with DHCP Option 43 configured
+   - Verify NTP connectivity for certificate validation (3.1.x requirement)
+   - Power on devices following recommended bring-up order
+
+2. **Monitor Enhanced Console Output (3.1.x)**
+   ```
+   # Expected 3.1.x PnP discovery messages:
    %PNPA-5-DISCOVERY: PnP Discovery started
    %PNPA-5-PNP_DHCP_INSTALLED_SUCCESSFULLY: PnP DHCP client installed successfully
+   %PNPA-5-CERTIFICATE_VALIDATION: Certificate validation in progress (3.1.x)
    %PNPA-5-PNP_DISCOVERY_DONE: PnP Discovery done successfully
+   %PNPA-5-CONTROLLER_CONTACT: Successfully contacted Catalyst Center 3.1.x
    ```
 
 ### Step 2: Ubuntu Script Execution and Configuration Setup

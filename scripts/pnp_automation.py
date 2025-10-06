@@ -834,16 +834,124 @@ class CatalystCenterPnP:
         self.logger.info(f"Provisioning complete: {success_count}/{total_devices} devices successful")
         return success_count == total_devices
 
+    def generate_dhcp_option43_string(self, catalyst_center_ip: str, port: int = 80, 
+                                      protocol: str = "HTTP", ntp_server: str = None,
+                                      trusted_cert_url: str = None) -> str:
+        """
+        Generate DHCP Option 43 string for PnP device discovery (3.1.x compatible)
+        Based on official Cisco Catalyst Center 3.1.x documentation
+        
+        Args:
+            catalyst_center_ip: IP address or FQDN of Catalyst Center
+            port: Port number (80 for HTTP, 443 for HTTPS)
+            protocol: Transport protocol (HTTP or HTTPS)
+            ntp_server: Optional NTP server IP for time sync
+            trusted_cert_url: Optional trusted certificate bundle URL
+            
+        Returns:
+            Properly formatted DHCP Option 43 string
+        """
+        # Start with base Option 43 format for 3.1.x
+        option43_components = ["5A1N"]  # PnP suboption, active operation, version 1, no debug
+        
+        # Determine IP address type
+        try:
+            import ipaddress
+            ipaddress.ip_address(catalyst_center_ip)
+            option43_components.append("B2")  # IPv4 address type
+        except ValueError:
+            option43_components.append("B1")  # Hostname/FQDN type
+        
+        # Add transport protocol (3.1.x enhanced security)
+        if protocol.upper() == "HTTPS":
+            option43_components.append("K5")
+        else:
+            option43_components.append("K4")
+        
+        # Add Catalyst Center IP/FQDN
+        option43_components.append(f"I{catalyst_center_ip}")
+        
+        # Add port number
+        option43_components.append(f"J{port}")
+        
+        # Add optional NTP server for certificate validation (3.1.x requirement)
+        if ntp_server:
+            option43_components.append(f"Z{ntp_server}")
+            
+        # Add optional trusted certificate bundle URL (3.1.x security feature)
+        if trusted_cert_url:
+            option43_components.append(f"T{trusted_cert_url}")
+        
+        # Join components with semicolons and add final semicolon
+        option43_string = ";".join(option43_components) + ";"
+        
+        self.logger.info(f"Generated DHCP Option 43 string: {option43_string}")
+        return option43_string
+
+    def validate_pnp_prerequisites(self) -> Dict[str, bool]:
+        """
+        Validate PnP prerequisites according to Catalyst Center 3.1.x documentation
+        
+        Returns:
+            Dictionary with validation results for each prerequisite
+        """
+        validation_results = {}
+        
+        # Check authentication
+        validation_results['authentication'] = self.ensure_authentication()
+        
+        if not validation_results['authentication']:
+            self.logger.error("Authentication failed - cannot validate other prerequisites")
+            return validation_results
+            
+        # Check System Settings prerequisites for 3.1.x
+        try:
+            # Validate Cisco.com credentials configuration
+            settings_url = f"{self.base_url}/dna/intent/api/v1/network-device/config/count"
+            response = requests.get(settings_url, headers=self.headers, verify=self.verify_ssl, timeout=30)
+            validation_results['system_settings'] = response.status_code == 200
+            
+            # Check for available golden images (3.1.x requirement)
+            images_url = f"{self.base_url}/dna/intent/api/v1/image/importation"
+            response = requests.get(images_url, headers=self.headers, verify=self.verify_ssl, timeout=30)
+            if response.status_code == 200:
+                images = response.json().get('response', [])
+                golden_images = [img for img in images if img.get('isTaggedGolden', False)]
+                validation_results['golden_images'] = len(golden_images) > 0
+            else:
+                validation_results['golden_images'] = False
+                
+            # Check global credentials configuration (3.1.x enhancement)
+            creds_url = f"{self.base_url}/dna/intent/api/v1/global-credential"
+            response = requests.get(creds_url, headers=self.headers, verify=self.verify_ssl, timeout=30)
+            validation_results['global_credentials'] = response.status_code == 200
+            
+            # Validate site hierarchy exists (3.1.x best practice)
+            sites_url = f"{self.base_url}/dna/intent/api/v1/site"
+            response = requests.get(sites_url, headers=self.headers, verify=self.verify_ssl, timeout=30)
+            if response.status_code == 200:
+                sites = response.json().get('response', [])
+                validation_results['site_hierarchy'] = len(sites) > 0
+            else:
+                validation_results['site_hierarchy'] = False
+                
+        except Exception as e:
+            self.logger.error(f"Error validating prerequisites: {str(e)}")
+            for key in ['system_settings', 'golden_images', 'global_credentials', 'site_hierarchy']:
+                validation_results[key] = False
+                
+        return validation_results
+
 def main():
     """
-    Main function for command-line usage
+    Main function to run PnP automation
     """
-    parser = argparse.ArgumentParser(description='Cisco PnP Automation Script')
-    parser.add_argument('--host', required=True, help='Catalyst Center IP/FQDN')
-    parser.add_argument('--username', required=True, help='Username')
-    parser.add_argument('--password', required=True, help='Password')
-    parser.add_argument('--topology', required=True, help='Topology YAML file')
-    parser.add_argument('--templates', required=True, help='Templates directory')
+    parser = argparse.ArgumentParser(description='Cisco Catalyst Center PnP Automation')
+    parser.add_argument('--host', required=True, help='Catalyst Center hostname/IP')
+    parser.add_argument('--username', required=True, help='Username for authentication')
+    parser.add_argument('--password', required=True, help='Password for authentication')
+    parser.add_argument('--topology', required=True, help='Path to topology YAML file')
+    parser.add_argument('--templates', required=True, help='Path to templates directory')
     parser.add_argument('--verify-ssl', action='store_true', help='Verify SSL certificates')
     
     args = parser.parse_args()

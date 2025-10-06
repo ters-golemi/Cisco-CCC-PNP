@@ -1,17 +1,24 @@
 {# Cisco CSR1000v Gateway Router Configuration Template #}
-{# Campus Core Gateway Configuration #}
+{# Campus Core Gateway Configuration - Catalyst Center 3.1.x Compatible #}
 {# Device: {{ device.name }} #}
 
 ! Cisco CSR1000v Gateway Router Configuration
 ! Generated: {{ timestamp }}
 ! Device: {{ device.name }}
 ! Role: {{ device.role }}
+! Catalyst Center 3.1.x PnP Onboarding Template
 
 version 16.12
 service timestamps debug datetime msec
 service timestamps log datetime msec
 no service password-encryption
 service call-home
+!
+! Enhanced logging for 3.1.x monitoring
+logging buffered 16384
+logging console
+logging monitor
+logging source-interface Loopback0
 !
 hostname {{ device.name }}
 !
@@ -21,14 +28,26 @@ vrf definition Mgmt-vrf
  address-family ipv4
  exit-address-family
 !
-! Enable necessary services
+! Enable necessary services for 3.1.x compatibility
 no ip http server
 ip http secure-server
 ip http authentication local
+ip http client source-interface {{ device.mgmt_interface | default('GigabitEthernet1') }}
 !
-! Configure management users
+! Enhanced NETCONF configuration for 3.1.x
+netconf-yang
+netconf-yang cisco-odm polling-enable
+restconf
+!
+! Configure management users (3.1.x credential requirements)
 username admin privilege 15 secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
 username dnac privilege 15 secret 5 $1$mERr$hx5rVt7rPNoS4wqbXKX7m0
+!
+! SNMP configuration for 3.1.x enhanced monitoring
+snmp-server community {{ snmp.read_community | default('cisco123') }} RO
+snmp-server community {{ snmp.write_community | default('cisco123') }} RW
+snmp-server location {{ device.location | default('Lab Environment') }}
+snmp-server contact {{ device.contact | default('Network Admin') }}
 !
 ! Enable SSH
 ip domain-name {{ topology.catalyst_center.settings.domain }}

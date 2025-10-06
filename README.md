@@ -12,12 +12,16 @@
 
 ## Overview
 
-This project provides comprehensive automation for Cisco Network Plug and Play (PnP) deployments using Cisco Catalyst Center 3.1.x (formerly DNA Center). The solution includes:
+This project provides comprehensive automation for Cisco Network Plug and Play (PnP) deployments using Cisco Catalyst Center 3.1.x (formerly DNA Center). The solution follows official Cisco 3.1.x PnP deployment guidelines and includes:
 
-- Automated device provisioning using PnP with DHCP Option 43
-- Configuration templates for routers, switches, wireless controllers, and access points
-- Python automation scripts for Catalyst Center API integration
-- Day-zero configuration deployment for campus networks
+- **Enhanced 3.1.x PnP workflows** with improved task monitoring and site management
+- **Advanced DHCP Option 43 generation** supporting HTTPS, NTP, and certificate validation
+- **3.1.x-compatible configuration templates** with NETCONF and enhanced security features
+- **Geographic site hierarchy management** with latitude/longitude support
+- **Comprehensive prerequisites validation** according to 3.1.x documentation
+- **Enhanced device provisioning workflows** with real-time status monitoring
+- Python automation scripts for 3.1.x Intent APIs with token management
+- Day-zero configuration deployment following 3.1.x best practices
 
 ### Supported Devices
 - Cisco ISR 8000v Routers (Branch/WAN)
@@ -27,22 +31,52 @@ This project provides comprehensive automation for Cisco Network Plug and Play (
 
 ## Prerequisites
 
-### Infrastructure Requirements
+### Infrastructure Requirements (3.1.x Specific)
 - **Cisco Catalyst Center** (version 3.1.x required, 3.1.0+ recommended)
-- **DHCP Server** with Option 43 support
-- **Network connectivity** between devices and Catalyst Center
-- **DNS resolution** for device discovery
-- **Enhanced API support** for 3.1.x features (improved task management, site hierarchy)
+- **DHCP Server** with enhanced Option 43 support (IPv4/IPv6, FQDN, NTP integration)
+- **NTP Server** for certificate validation (3.1.x requirement for secure deployments)
+- **Network connectivity** between devices and Catalyst Center with HTTPS support
+- **DNS resolution** for device discovery (enhanced FQDN support in 3.1.x)
+- **Certificate management** infrastructure for SUDI validation (3.1.x security enhancement)
+- **Enhanced API support** for 3.1.x features:
+  - Geographic site management with coordinates
+  - Real-time task monitoring and progress tracking
+  - Advanced device filtering and state management
+  - Enhanced template versioning and rollback capabilities
 
 ### Software Requirements
 - Python 3.8 or higher
 - Required Python packages (see requirements.txt)
 - Network access to Catalyst Center APIs
 
-### Credentials and Access
-- Catalyst Center administrator credentials
-- Network device credentials (local admin accounts)
-- SNMP community strings (if using SNMP monitoring)
+### Credentials and Access (3.1.x Enhanced)
+- **Catalyst Center administrator credentials** with API access
+- **Network device credentials** (CLI and SNMPv2c/SNMPv3 - both read and write required for 3.1.x)
+- **Cisco.com credentials** configured in System > Settings (3.1.x requirement)
+- **Smart Account credentials** for device synchronization (optional but recommended)
+- **Global device credentials** configured for site-level management
+
+## New in Catalyst Center 3.1.x
+
+### Enhanced PnP Features
+- **Improved Task Management**: Real-time task monitoring with detailed progress tracking
+- **Geographic Site Management**: Create sites with latitude/longitude coordinates for better visualization
+- **Enhanced Security**: SUDI certificate validation and trusted certificate bundle support
+- **Advanced Filtering**: Filter PnP devices by state, serial number, and other criteria
+- **FQDN Support**: Enhanced DHCP Option 43 with full FQDN support
+- **Template Versioning**: Better template management with version control and rollback capabilities
+
+### API Enhancements
+- **Enhanced Authentication**: Improved token management with expiration tracking
+- **Better Error Handling**: More detailed error responses and troubleshooting information
+- **Expanded Device Support**: Support for latest Catalyst device families
+- **Performance Improvements**: Faster API responses and reduced latency
+
+### Security Improvements
+- **HTTPS by Default**: Enhanced security with mandatory HTTPS for production deployments
+- **NTP Integration**: Certificate validation requires NTP synchronization
+- **Enhanced SNMP**: Support for SNMPv3 with advanced authentication
+- **Device Controllability**: Automatic NETCONF enablement for supported devices
 
 ## Installation
 
@@ -150,9 +184,60 @@ Ensure Catalyst Center is properly configured:
 - **Templates**: Import or create device templates
 - **Sites**: Define site hierarchy
 
-## Deployment Process
+## 3.1.x Enhanced Deployment Process
 
-### Phase 1: Preparation
+### Phase 1: Prerequisites Validation (3.1.x)
+
+#### 1. Validate PnP Prerequisites
+```bash
+python3 -c "
+from scripts.pnp_automation import CatalystCenterPnP
+client = CatalystCenterPnP('172.16.1.10', 'admin', 'password')
+results = client.validate_pnp_prerequisites()
+for check, passed in results.items():
+    print(f'{check}: {\"PASS\" if passed else \"FAIL\"}')
+"
+```
+
+#### 2. Generate Enhanced DHCP Option 43 Strings
+```bash
+python3 -c "
+from scripts.pnp_automation import CatalystCenterPnP
+client = CatalystCenterPnP('172.16.1.10', 'admin', 'password')
+
+# Generate HTTPS Option 43 with NTP (recommended for 3.1.x)
+option43 = client.generate_dhcp_option43_string(
+    catalyst_center_ip='172.16.1.10',
+    port=443,
+    protocol='HTTPS',
+    ntp_server='172.16.1.1'
+)
+print(f'Enhanced 3.1.x Option 43: {option43}')
+"
+```
+
+### Phase 2: Site Preparation (3.1.x Geographic Features)
+
+#### 1. Create Geographic Site Hierarchy
+```bash
+python3 -c "
+from scripts.pnp_automation import CatalystCenterPnP
+client = CatalystCenterPnP('172.16.1.10', 'admin', 'password')
+client.authenticate()
+
+# Create area with geographic coordinates
+area_id = client.create_site_hierarchy(
+    site_name='Lab_Campus',
+    site_type='area',
+    address='123 Technology Drive, San Jose, CA',
+    latitude=37.4419,
+    longitude=-121.9438
+)
+print(f'Created area site: {area_id}')
+"
+```
+
+### Phase 3: Device Provisioning (3.1.x Enhanced)
 
 #### 1. Generate Device Configurations
 ```bash
@@ -160,10 +245,25 @@ python scripts/config_generator.py \
   --topology topology/pnp-topology.yaml \
   --templates templates \
   --output generated_configs \
+  --3.1.x-mode \
   --summary
 ```
 
-#### 2. Validate Templates
+#### 2. Monitor Device States with 3.1.x Filtering
+```bash
+python3 -c "
+from scripts.pnp_automation import CatalystCenterPnP
+client = CatalystCenterPnP('172.16.1.10', 'admin', 'password')
+client.authenticate()
+
+# Get devices by state using enhanced 3.1.x filtering
+for state in ['Unclaimed', 'Planned', 'Onboarding', 'Provisioned']:
+    devices = client.get_pnp_devices(device_state=state)
+    print(f'{state}: {len(devices)} devices')
+"
+```
+
+#### 3. Validate Templates
 ```bash
 python scripts/config_generator.py \
   --validate \
